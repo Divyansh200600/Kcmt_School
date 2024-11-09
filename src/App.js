@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import AdminPage from './pages/adminPage/admin';
-import AdminDashboard from './components/adminComps/adminDashboard';
+import AdminDashboard from './pages/adminPage/adminDashboard';
 
 //user routes --->
 

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { auth, firestore } from '../../utils/firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { setDoc, doc, getDocs, collection, deleteDoc } from 'firebase/firestore';
-import Swal from 'sweetalert2'; // SweetAlert2 for notifications
-import { Visibility, VisibilityOff } from '@mui/icons-material'; // MUI icons for password visibility
-import { CircularProgress } from '@mui/material'; // Material UI loader
+import Swal from 'sweetalert2';
+import { Visibility, VisibilityOff, Search, Delete as DeleteIcon } from '@mui/icons-material';
+import { CircularProgress, TextField, IconButton, Button, Typography } from '@mui/material';
 
 const AddUser = () => {
   const [userData, setUserData] = useState({
@@ -13,13 +13,13 @@ const AddUser = () => {
     role: '',
     password: ''
   });
-  const [passwordVisible, setPasswordVisible] = useState(false); // Toggle password visibility
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false); // Loader state for async operations
-  const [dataLoading, setDataLoading] = useState(false); // Loader for data fetching
+  const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    // Fetch users from Firestore when the component mounts
     const getUsers = async () => {
       setDataLoading(true);
       const usersList = await fetchUsers();
@@ -29,14 +29,12 @@ const AddUser = () => {
     getUsers();
   }, []);
 
-  // Fetch users from Firestore
   const fetchUsers = async () => {
     const usersCollection = collection(firestore, 'users');
     const snapshot = await getDocs(usersCollection);
     return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   };
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUserData((prevData) => ({
@@ -45,36 +43,31 @@ const AddUser = () => {
     }));
   };
 
-  // Handle password visibility toggle
   const togglePasswordVisibility = () => {
     setPasswordVisible((prevState) => !prevState);
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!userData.email || !userData.password || !userData.username || !userData.role) {
-      Swal.fire('Error', 'Please fill in all fields', 'error'); // SweetAlert2 error message
+      Swal.fire('Error', 'Please fill in all fields', 'error');
       return;
     }
 
     try {
-      setLoading(true); // Show loader while submitting the form
-      // Create a new user with email and password
+      setLoading(true);
       const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
       const user = userCredential.user;
 
-      // Save user data to Firestore, including the password (not recommended in production)
       await setDoc(doc(firestore, 'users', user.uid), {
         username: userData.username,
         email: userData.email,
         role: userData.role,
-        password: userData.password, // Saving password to Firestore (consider hashing in production)
+        password: userData.password, 
         timestamp: new Date().toISOString(),
       });
 
-      // Reset the form
       setUserData({
         username: '',
         email: '',
@@ -82,36 +75,42 @@ const AddUser = () => {
         password: '',
       });
 
-      // Fetch updated list of users
       const usersList = await fetchUsers();
       setUsers(usersList);
 
-      Swal.fire('Success', 'User successfully added to Firestore', 'success'); // SweetAlert2 success message
+      Swal.fire('Success', 'User successfully added to Firestore', 'success');
     } catch (error) {
-      Swal.fire('Error', `Error adding user: ${error.message}`, 'error'); // SweetAlert2 error message
+      Swal.fire('Error', `Error adding user: ${error.message}`, 'error');
     } finally {
-      setLoading(false); // Hide loader after submission
+      setLoading(false);
     }
   };
 
-  // Handle user deletion
   const handleDelete = async (userId) => {
     try {
-      setLoading(true); // Show loader while deleting user
+      setLoading(true);
       await deleteDoc(doc(firestore, 'users', userId));
-      console.log('User successfully deleted');
-      
-      // Fetch updated list of users
+
       const usersList = await fetchUsers();
       setUsers(usersList);
 
-      Swal.fire('Success', 'User successfully deleted', 'success'); // SweetAlert2 success message
+      Swal.fire('Success', 'User successfully deleted', 'success');
     } catch (error) {
-      Swal.fire('Error', `Error deleting user: ${error.message}`, 'error'); // SweetAlert2 error message
+      Swal.fire('Error', `Error deleting user: ${error.message}`, 'error');
     } finally {
-      setLoading(false); // Hide loader after deletion
+      setLoading(false);
     }
   };
+
+  // Filter users based on the search query
+  const filteredUsers = users.filter(user =>
+    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Separate users and admins
+  const admins = filteredUsers.filter(user => user.role === 'admin');
+  const normalUsers = filteredUsers.filter(user => user.role === 'user');
 
   return (
     <div className="flex space-x-6 p-6">
@@ -172,7 +171,7 @@ const AddUser = () => {
             <button
               type="button"
               onClick={togglePasswordVisibility}
-              className="absolute top-1/2 right-4 transform -translate-y-1/2"
+              className="absolute bottom-0 right-4 transform -translate-y-1/2"
               aria-label={passwordVisible ? 'Hide password' : 'Show password'}
             >
               {passwordVisible ? (
@@ -185,10 +184,10 @@ const AddUser = () => {
           <button 
             type="submit" 
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-all w-full"
-            disabled={loading} // Disable button when loading
+            disabled={loading}
           >
             {loading ? (
-              <CircularProgress size={24} color="inherit" /> // Show circular loader when loading
+              <CircularProgress size={24} color="inherit" />
             ) : (
               'Add User'
             )}
@@ -196,36 +195,79 @@ const AddUser = () => {
         </form>
       </div>
 
-      {/* Right side: Display Saved Users */}
+      {/* Right side: Users List */}
       <div className="flex-1 bg-white p-6 rounded-lg shadow-lg">
         <h3 className="text-2xl font-bold mb-4">Users List</h3>
+        <div className="mb-4 relative">
+          <TextField
+            variant="outlined"
+            placeholder="Search Users..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            fullWidth
+            InputProps={{
+              endAdornment: (
+                <Search className="text-gray-600" />
+              ),
+            }}
+          />
+        </div>
         {dataLoading ? (
           <div className="flex justify-center items-center space-x-4">
             <CircularProgress size={50} />
             <span>Loading Users...</span>
           </div>
         ) : (
-          <ul className="space-y-4">
-            {users.map((user) => (
-              <li key={user.id} className="flex justify-between items-center">
-                <div>
-                  <strong>{user.username}</strong> ({user.role})
-                  <p className="text-sm text-gray-600">{user.email}</p>
+          <>
+            {admins.length > 0 && (
+              <div>
+                <h4 className="text-xl font-semibold text-gray-800 mb-2">Admins</h4>
+                <div className="space-y-4">
+                  {admins.map((user, index) => (
+                    <div
+                      key={user.id}
+                      className={`flex justify-between items-center p-4 rounded-md shadow-md transition-all hover:bg-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}
+                    >
+                      <div>
+                        <Typography variant="h6" className="font-semibold text-gray-800">{user.username}</Typography>
+                        <Typography variant="body2" className="text-gray-600">{user.email}</Typography>
+                      </div>
+                      <IconButton
+                        onClick={() => handleDelete(user.id)}
+                        color="error"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </div>
+                  ))}
                 </div>
-                <button
-                  onClick={() => handleDelete(user.id)}
-                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-                  disabled={loading} // Disable button when loading
-                >
-                  {loading ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : (
-                    'Delete'
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
+              </div>
+            )}
+            {normalUsers.length > 0 && (
+              <div className="mt-6">
+                <h4 className="text-xl font-semibold text-gray-800 mb-2">Users</h4>
+                <div className="space-y-4">
+                  {normalUsers.map((user, index) => (
+                    <div
+                      key={user.id}
+                      className={`flex justify-between items-center p-4 rounded-md shadow-md transition-all hover:bg-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}
+                    >
+                      <div>
+                        <Typography variant="h6" className="font-semibold text-gray-800">{user.username}</Typography>
+                        <Typography variant="body2" className="text-gray-600">{user.email}</Typography>
+                      </div>
+                      <IconButton
+                        onClick={() => handleDelete(user.id)}
+                        color="error"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
