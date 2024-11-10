@@ -6,16 +6,17 @@ import AdminDashboard from './pages/adminPage/adminDashboard';
 
 //user routes --->
 
-import UserDashboard from './pages/userPage/userPage';
-
+import UserDashboard from './pages/userPage/userDb';
+import UserLogin from './pages/userPage/userLogin';
 function App() {
   return (
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin-login" element={<AdminPage />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/user-dashboard" element={<UserDashboard />} />
+          <Route path="/user-login" element={<UserLogin />} />
         </Routes>
       </div>
     </Router>

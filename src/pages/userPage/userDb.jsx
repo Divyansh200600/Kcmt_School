@@ -1,0 +1,101 @@
+import React, { useState } from "react";
+import { FaSchool, FaBookOpen, FaUniversity, FaGraduationCap, FaChalkboardTeacher, FaBell, FaSearch } from "react-icons/fa";
+import Cbse from '../../components/userComps/cbse';
+
+const UserDashboard = () => {
+  const [activeTab, setActiveTab] = useState("icse");
+  const username = localStorage.getItem("username");  // Get the username from localStorage
+
+  // Main content for each tab
+  const renderContent = () => {
+    switch (activeTab) {
+      case "icse":
+        return <div className="text-lg"><Cbse /></div>;
+      case "cbse":
+        return <div className="text-lg">Welcome to the CBSE School Dashboard.</div>;
+      case "upBoard":
+        return <div className="text-lg">Welcome to the U.P. Board School Dashboard.</div>;
+      case "nios":
+        return <div className="text-lg">Welcome to the NIOS Dashboard.</div>;
+      case "coaching":
+        return <div className="text-lg">Welcome to the Coaching Dashboard.</div>;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+      {/* Sidebar */}
+      <div className="w-full md:w-64 bg-blue-600 text-white p-5 flex flex-col justify-between space-y-6">
+        <div className="flex flex-col space-y-6">
+          <div className="text-2xl font-semibold">{username} Dashboard</div>
+          <div className="flex flex-col space-y-2">
+            <button
+              onClick={() => setActiveTab("icse")}
+              className={`flex items-center space-x-2 p-3 rounded-md ${
+                activeTab === "icse" ? "bg-blue-700" : "hover:bg-blue-500"
+              }`}
+            >
+              <FaSchool className="text-lg" />
+              <span>ICSE School</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("cbse")}
+              className={`flex items-center space-x-2 p-3 rounded-md ${
+                activeTab === "cbse" ? "bg-blue-700" : "hover:bg-blue-500"
+              }`}
+            >
+              <FaBookOpen className="text-lg" />
+              <span>CBSE School</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("upBoard")}
+              className={`flex items-center space-x-2 p-3 rounded-md ${
+                activeTab === "upBoard" ? "bg-blue-700" : "hover:bg-blue-500"
+              }`}
+            >
+              <FaUniversity className="text-lg" />
+              <span>U.P. Board School</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("nios")}
+              className={`flex items-center space-x-2 p-3 rounded-md ${
+                activeTab === "nios" ? "bg-blue-700" : "hover:bg-blue-500"
+              }`}
+            >
+              <FaGraduationCap className="text-lg" />
+              <span>NIOS</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("coaching")}
+              className={`flex items-center space-x-2 p-3 rounded-md ${
+                activeTab === "coaching" ? "bg-blue-700" : "hover:bg-blue-500"
+              }`}
+            >
+              <FaChalkboardTeacher className="text-lg" />
+              <span>Coaching</span>
+            </button>
+          </div>
+      
+       
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-6 space-y-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div className="text-3xl font-semibold text-gray-800">Welcome back, {username}</div>
+        </div>
+
+        {/* Dynamic Content */}
+        <div className="bg-white p-6 rounded-lg shadow-lg">
+          {renderContent()}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default UserDashboard;
