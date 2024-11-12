@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { getDocs, collection, doc, updateDoc } from 'firebase/firestore';
 import { CircularProgress } from '@mui/material';
-import { Search } from '@mui/icons-material'; // Icon for the search field
+import { Search } from '@mui/icons-material';
 import Swal from 'sweetalert2';
 import { firestore } from '../../utils/firebaseConfig';
 
 const RoleMaster = () => {
   const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]); // State for filtered users
-  const [search, setSearch] = useState(''); // State for search input
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Fetch user data from Firestore
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -22,7 +21,7 @@ const RoleMaster = () => {
           ...doc.data(),
         }));
         setUsers(userList);
-        setFilteredUsers(userList); // Initialize filtered users with all users
+        setFilteredUsers(userList);
       } catch (error) {
         Swal.fire('Error', 'Failed to load users', 'error');
       } finally {
@@ -32,13 +31,11 @@ const RoleMaster = () => {
     fetchUsers();
   }, []);
 
-  // Handle search input change
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
     filterUsers(e.target.value);
   };
 
-  // Filter users based on search
   const filterUsers = (searchTerm) => {
     const lowercasedSearch = searchTerm.toLowerCase();
     const filtered = users.filter((user) =>
@@ -48,15 +45,20 @@ const RoleMaster = () => {
     setFilteredUsers(filtered);
   };
 
-  // Handle role update
   const updateUserRole = async (userId, newRole) => {
     const userDoc = doc(firestore, 'users', userId);
     try {
       await updateDoc(userDoc, { role: newRole });
-      setUsers(users.map((user) =>
-        user.id === userId ? { ...user, role: newRole } : user
-      ));
-      filterUsers(search); // Update filtered users after role change
+
+      // Optimistically update both the users and filteredUsers state
+      setUsers((prevUsers) => 
+        prevUsers.map((user) => user.id === userId ? { ...user, role: newRole } : user)
+      );
+
+      setFilteredUsers((prevFilteredUsers) => 
+        prevFilteredUsers.map((user) => user.id === userId ? { ...user, role: newRole } : user)
+      );
+
       Swal.fire('Success', `Role updated to ${newRole}`, 'success');
     } catch (error) {
       Swal.fire('Error', 'Failed to update role', 'error');

@@ -11,13 +11,18 @@ const AddUser = () => {
     username: '',
     email: '',
     role: '',
-    password: ''
+    password: '',
+    department: '', // New state for department
   });
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [departments, setDepartments] = useState([
+    'BCA', 'MCA', 'BBA', 'MBA', 'BSc', 'MSc', 'Science', 'BCom Hons.'
+  ]);
+  
 
   useEffect(() => {
     const getUsers = async () => {
@@ -50,7 +55,7 @@ const AddUser = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!userData.email || !userData.password || !userData.username || !userData.role) {
+    if (!userData.email || !userData.password || !userData.username || !userData.role || !userData.department) {
       Swal.fire('Error', 'Please fill in all fields', 'error');
       return;
     }
@@ -60,11 +65,17 @@ const AddUser = () => {
       const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
       const user = userCredential.user;
 
+      // Generate UID based on department and unique number
+      const newUserUID = await generateUID(userData.department);
+
+      // Save the user to Firestore with generated UID
       await setDoc(doc(firestore, 'users', user.uid), {
         username: userData.username,
         email: userData.email,
         role: userData.role,
         password: userData.password, 
+        department: userData.department,
+        uid: newUserUID, // Save the generated UID
         timestamp: new Date().toISOString(),
       });
 
@@ -73,12 +84,13 @@ const AddUser = () => {
         email: '',
         role: '',
         password: '',
+        department: '',
       });
 
       const usersList = await fetchUsers();
       setUsers(usersList);
 
-      Swal.fire('Success', 'User successfully added to Firestore', 'success');
+      Swal.fire('Success', 'User successfully added', 'success');
     } catch (error) {
       Swal.fire('Error', `Error adding user: ${error.message}`, 'error');
     } finally {
@@ -100,6 +112,17 @@ const AddUser = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Generate a unique UID based on the department and the next available ID starting from 101
+  const generateUID = async (department) => {
+    const usersCollection = collection(firestore, 'users');
+    const snapshot = await getDocs(usersCollection);
+    const departmentUsers = snapshot.docs.filter((doc) => doc.data().department === department);
+
+    // Get the next available ID by counting the number of users in the selected department
+    const nextId = departmentUsers.length + 101; // Start from 101 for each department
+    return `${department}-${nextId}`; // Format UID as "BCA-101"
   };
 
   // Filter users based on the search query
@@ -157,6 +180,22 @@ const AddUser = () => {
               <option value="user">User</option>
             </select>
           </div>
+          <div className="mb-4">
+            <label htmlFor="department" className="block text-gray-700">Department</label>
+            <select
+              id="department"
+              name="department"
+              value={userData.department}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded-md"
+              required
+            >
+              <option value="">Select Department</option>
+              {departments.map((department) => (
+                <option key={department} value={department}>{department}</option>
+              ))}
+            </select>
+          </div>
           <div className="mb-4 relative">
             <label htmlFor="password" className="block text-gray-700">Password</label>
             <input
@@ -181,16 +220,12 @@ const AddUser = () => {
               )}
             </button>
           </div>
-          <button 
-            type="submit" 
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-all w-full"
+          <button
+            type="submit"
+            className="w-full p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             disabled={loading}
           >
-            {loading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              'Add User'
-            )}
+            {loading ? <CircularProgress size={24} className="text-white" /> : 'Add User'}
           </button>
         </form>
       </div>

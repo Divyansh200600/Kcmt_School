@@ -1,30 +1,80 @@
 import React, { useState } from 'react';
-import { TextField, Button, Box, Typography, Paper, InputAdornment, IconButton } from '@mui/material';
+import { TextField, Button, Box, Typography, Paper, InputAdornment, IconButton, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel } from '@mui/material';
 import { Visibility, VisibilityOff, Email } from '@mui/icons-material';
 import Swal from 'sweetalert2';
-import { auth } from '../../utils/firebaseConfig';
+import { auth, firestore } from '../../utils/firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState('user'); // Role selection (user/admin/management)
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      Swal.fire({
-        icon: 'success',
-        title: 'Login Successful',
-        text: 'Welcome back!',
-        showConfirmButton: false,
-        timer: 1500,
-      });
-      navigate('/admin-dashboard'); 
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Fetch user role from Firestore
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+
+        // Check if the selected role matches the role stored in Firestore
+        if (userData.role === role) {
+          // Role matches, proceed to the dashboard
+          Swal.fire({
+            icon: 'success',
+            title: 'Login Successful',
+            text: 'Welcome back!',
+            showConfirmButton: false,
+            timer: 1500,
+          });
+
+          // Navigate based on the role selected and the role in Firestore
+          switch (userData.role) {
+            case 'admin':
+              navigate('/admin-dashboard');
+              break;
+            case 'user':
+              navigate('/user-dashboard');
+              break;
+            case 'management':
+              navigate('/management-dashboard');
+              break;
+            default:
+              Swal.fire({
+                icon: 'error',
+                title: 'Role Not Recognized',
+                text: 'Your role is not recognized. Please contact support.',
+              });
+          }
+        } else {
+          // Role mismatch error
+          Swal.fire({
+            icon: 'error',
+            title: 'Login Failed',
+            text: 'Your role does not match the selected role.',
+          });
+        }
+      } else {
+        // No user data found in Firestore
+        Swal.fire({
+          icon: 'error',
+          title: 'Login Failed',
+          text: 'No user found.',
+        });
+      }
     } catch (error) {
+      // Handle login error
       Swal.fire({
         icon: 'error',
         title: 'Login Failed',
@@ -120,6 +170,23 @@ const LoginPage = () => {
               }}
             />
           </Box>
+
+          {/* Role Selection (Admin/User/Management) */}
+          <Box mb={2}>
+            <FormControl component="fieldset">
+              <FormLabel component="legend">Select Role</FormLabel>
+              <RadioGroup
+                row
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+              >
+                <FormControlLabel value="user" control={<Radio />} label="User" />
+                <FormControlLabel value="admin" control={<Radio />} label="Admin" />
+                <FormControlLabel value="management" control={<Radio />} label="Management" />
+              </RadioGroup>
+            </FormControl>
+          </Box>
+
           <Button
             type="submit"
             fullWidth
@@ -141,8 +208,6 @@ const LoginPage = () => {
             Login
           </Button>
         </form>
-
-        
       </Paper>
     </Box>
   );
