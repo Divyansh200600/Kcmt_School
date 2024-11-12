@@ -1,24 +1,39 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
-import AdminPage from './pages/adminPage/admin';
+import { AuthProvider } from './utils/AuthContext';
+import ProtectedRoute from './utils/ProtectedRoute';
+
+import AdminLogin from './pages/adminPage/adminLogin';
 import AdminDashboard from './pages/adminPage/adminDashboard';
-
-//user routes --->
-
 import UserDashboard from './pages/userPage/userDb';
-import UserLogin from './pages/userPage/userLogin';
+import LoginPage from './pages/adminPage/adminLogin';
+
 function App() {
   return (
     <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/admin-login" element={<AdminPage />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          <Route path="/user-dashboard" element={<UserDashboard />} />
-          <Route path="/user-login" element={<UserLogin />} />
-        </Routes>
-      </div>
+      <AuthProvider>
+        <div className="App">
+          <Routes>
+            <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/login" element={<LoginPage />} />
+
+            {/* Protected Routes */}
+            <Route
+              path="/admin-dashboard"
+              element={<ProtectedRoute element={AdminDashboard} allowedRoles={['admin']} />}
+            />
+            <Route
+              path="/user-dashboard"
+              element={<ProtectedRoute element={UserDashboard} allowedRoles={['user']} />}
+            />
+            {/* <Route
+              path="/management-dashboard"
+              element={<ProtectedRoute element={ManagementDashboard} allowedRoles={['management']} />}
+            /> */}
+          </Routes>
+        </div>
+      </AuthProvider>
     </Router>
   );
 }
