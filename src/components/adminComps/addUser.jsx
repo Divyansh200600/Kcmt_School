@@ -3,8 +3,9 @@ import { auth, firestore } from '../../utils/firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { setDoc, doc, getDocs, collection, deleteDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
-import { Visibility, VisibilityOff, Search, Delete as DeleteIcon } from '@mui/icons-material';
-import { CircularProgress, TextField, IconButton, Button, Typography } from '@mui/material';
+import { Visibility, VisibilityOff, Delete as DeleteIcon } from '@mui/icons-material';
+import { CircularProgress, TextField, IconButton, Button, Typography, Box, Grid, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 
 const AddUser = () => {
   const [userData, setUserData] = useState({
@@ -12,17 +13,14 @@ const AddUser = () => {
     email: '',
     role: '',
     password: '',
-    department: '', // New state for department
+    department: '',
   });
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [departments, setDepartments] = useState([
-    'BCA', 'MCA', 'BBA', 'MBA', 'BSc', 'MSc', 'Science', 'BCom Hons.'
-  ]);
-  
+  const [departments] = useState(['BCA', 'MCA', 'BBA', 'MBA', 'BSc', 'MSc', 'Science', 'BCom Hons.']);
 
   useEffect(() => {
     const getUsers = async () => {
@@ -64,18 +62,15 @@ const AddUser = () => {
       setLoading(true);
       const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
       const user = userCredential.user;
-
-      // Generate UID based on department and unique number
       const newUserUID = await generateUID(userData.department);
 
-      // Save the user to Firestore with generated UID
       await setDoc(doc(firestore, 'users', user.uid), {
         username: userData.username,
         email: userData.email,
         role: userData.role,
-        password: userData.password, 
+        password: userData.password,
         department: userData.department,
-        uid: newUserUID, // Save the generated UID
+        uid: newUserUID,
         timestamp: new Date().toISOString(),
       });
 
@@ -114,198 +109,150 @@ const AddUser = () => {
     }
   };
 
-  // Generate a unique UID based on the department and the next available ID starting from 101
   const generateUID = async (department) => {
     const usersCollection = collection(firestore, 'users');
     const snapshot = await getDocs(usersCollection);
     const departmentUsers = snapshot.docs.filter((doc) => doc.data().department === department);
-
-    // Get the next available ID by counting the number of users in the selected department
-    const nextId = departmentUsers.length + 101; // Start from 101 for each department
-    return `${department}-${nextId}`; // Format UID as "BCA-101"
+    const nextId = departmentUsers.length + 101;
+    return `${department}-${nextId}`;
   };
 
-  // Filter users based on the search query
-  const filteredUsers = users.filter(user =>
-    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const columns = [
+    { field: 'username', headerName: 'Username', flex: 1 },
+    { field: 'email', headerName: 'Email', flex: 1 },
+    { field: 'role', headerName: 'Role', flex: 0.5 },
+    { field: 'department', headerName: 'Department', flex: 0.5 },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      flex: 0.5,
+      sortable: false,
+      renderCell: (params) => (
+        <IconButton color="error" onClick={() => handleDelete(params.row.id)}>
+          <DeleteIcon />
+        </IconButton>
+      ),
+    },
+  ];
+
+  const filteredUsers = users.filter(
+    (user) =>
+      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Separate users and admins
-  const admins = filteredUsers.filter(user => user.role === 'admin');
-  const normalUsers = filteredUsers.filter(user => user.role === 'user');
-
   return (
-    <div className="flex space-x-6 p-6">
-      {/* Left side: Add User Form */}
-      <div className="flex-1 bg-white p-6 rounded-lg shadow-lg">
-        <h3 className="text-2xl font-bold mb-4">Add New User</h3>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="username" className="block text-gray-700">Username</label>
-            <input
-              type="text"
-              id="username"
+    <Grid container spacing={3} padding={3}>
+      <Grid item xs={12} md={4}>
+        <Box padding={3} bgcolor="white" borderRadius={3} boxShadow={3}>
+          <Typography variant="h5" fontWeight="bold" mb={2}>
+            Add New User
+          </Typography>
+          <form onSubmit={handleSubmit}>
+            <TextField
+              label="Username"
               name="username"
               value={userData.username}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-md"
+              fullWidth
+              margin="normal"
               required
             />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-gray-700">Email</label>
-            <input
+            <TextField
+              label="Email"
               type="email"
-              id="email"
               name="email"
               value={userData.email}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-md"
+              fullWidth
+              margin="normal"
               required
             />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="role" className="block text-gray-700">Role</label>
-            <select
-              id="role"
-              name="role"
-              value={userData.role}
-              onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              required
-            >
-              <option value="">Select Role</option>
-              <option value="admin">Admin</option>
-              <option value="user">User</option>
-            </select>
-          </div>
-          <div className="mb-4">
-            <label htmlFor="department" className="block text-gray-700">Department</label>
-            <select
-              id="department"
-              name="department"
-              value={userData.department}
-              onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              required
-            >
-              <option value="">Select Department</option>
-              {departments.map((department) => (
-                <option key={department} value={department}>{department}</option>
-              ))}
-            </select>
-          </div>
-          <div className="mb-4 relative">
-            <label htmlFor="password" className="block text-gray-700">Password</label>
-            <input
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Role</InputLabel>
+              <Select name="role" value={userData.role} onChange={handleChange} required>
+                <MenuItem value="">Select Role</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+                <MenuItem value="user">User</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Department</InputLabel>
+              <Select name="department" value={userData.department} onChange={handleChange} required>
+                <MenuItem value="">Select Department</MenuItem>
+                {departments.map((dept) => (
+                  <MenuItem key={dept} value={dept}>
+                    {dept}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label="Password"
               type={passwordVisible ? 'text' : 'password'}
-              id="password"
               name="password"
               value={userData.password}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-md"
+              fullWidth
+              margin="normal"
               required
+              InputProps={{
+                endAdornment: (
+                  <IconButton onClick={togglePasswordVisibility} edge="end">
+                    {passwordVisible ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                ),
+              }}
             />
-            <button
-              type="button"
-              onClick={togglePasswordVisibility}
-              className="absolute bottom-0 right-4 transform -translate-y-1/2"
-              aria-label={passwordVisible ? 'Hide password' : 'Show password'}
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              color="primary"
+              disabled={loading}
+              sx={{ mt: 2 }}
             >
-              {passwordVisible ? (
-                <VisibilityOff className="text-gray-600" />
-              ) : (
-                <Visibility className="text-gray-600" />
-              )}
-            </button>
-          </div>
-          <button
-            type="submit"
-            className="w-full p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} className="text-white" /> : 'Add User'}
-          </button>
-        </form>
-      </div>
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Add User'}
+            </Button>
+          </form>
+        </Box>
+      </Grid>
 
-      {/* Right side: Users List */}
-      <div className="flex-1 bg-white p-6 rounded-lg shadow-lg">
-        <h3 className="text-2xl font-bold mb-4">Users List</h3>
-        <div className="mb-4 relative">
+      <Grid item xs={12} md={8}>
+        <Box padding={3} bgcolor="white" borderRadius={3} boxShadow={3}>
+          <Typography variant="h5" fontWeight="bold" mb={2}>
+            Users List
+          </Typography>
           <TextField
             variant="outlined"
             placeholder="Search Users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             fullWidth
-            InputProps={{
-              endAdornment: (
-                <Search className="text-gray-600" />
-              ),
-            }}
+            sx={{ mb: 2 }}
           />
-        </div>
-        {dataLoading ? (
-          <div className="flex justify-center items-center space-x-4">
-            <CircularProgress size={50} />
-            <span>Loading Users...</span>
-          </div>
-        ) : (
-          <>
-            {admins.length > 0 && (
-              <div>
-                <h4 className="text-xl font-semibold text-gray-800 mb-2">Admins</h4>
-                <div className="space-y-4">
-                  {admins.map((user, index) => (
-                    <div
-                      key={user.id}
-                      className={`flex justify-between items-center p-4 rounded-md shadow-md transition-all hover:bg-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}
-                    >
-                      <div>
-                        <Typography variant="h6" className="font-semibold text-gray-800">{user.username}</Typography>
-                        <Typography variant="body2" className="text-gray-600">{user.email}</Typography>
-                      </div>
-                      <IconButton
-                        onClick={() => handleDelete(user.id)}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {normalUsers.length > 0 && (
-              <div className="mt-6">
-                <h4 className="text-xl font-semibold text-gray-800 mb-2">Users</h4>
-                <div className="space-y-4">
-                  {normalUsers.map((user, index) => (
-                    <div
-                      key={user.id}
-                      className={`flex justify-between items-center p-4 rounded-md shadow-md transition-all hover:bg-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}
-                    >
-                      <div>
-                        <Typography variant="h6" className="font-semibold text-gray-800">{user.username}</Typography>
-                        <Typography variant="body2" className="text-gray-600">{user.email}</Typography>
-                      </div>
-                      <IconButton
-                        onClick={() => handleDelete(user.id)}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+          {dataLoading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" height="200px">
+              <CircularProgress size={50} />
+            </Box>
+          ) : (
+            <DataGrid
+              rows={filteredUsers}
+              columns={columns}
+              pageSize={5}
+              rowsPerPageOptions={[5, 10, 20]}
+              autoHeight
+              disableSelectionOnClick
+              sx={{
+                '& .MuiDataGrid-row:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                },
+              }}
+            />
+          )}
+        </Box>
+      </Grid>
+    </Grid>
   );
 };
 

@@ -1,3 +1,8 @@
+body, html {
+  cursor: url('/src/assets/cursor.png'), auto;
+}
+
+
 .App {
   text-align: center;
 }

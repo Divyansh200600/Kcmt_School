@@ -6,7 +6,7 @@ import {
 } from '@mui/icons-material';
 
 // All Masters Import here ---->
-
+import Db from '../../components/adminComps/dashboard';
 import AddUser from '../../components/adminComps/addUser';
 import RoleMaster from '../../components/adminComps/roleMaster';
 import InstitutionMaster from '../../components/adminComps/institutionMaster';
@@ -59,7 +59,6 @@ const AdminDashboard = () => {
         `}
       </style>
 
-      {/* Sidebar - Visible only on larger screens */}
       <div
         className={`transition-all duration-300 bg-gray-800 text-white p-6 flex flex-col space-y-6 fixed left-0 top-0 h-full z-50 md:w-64 ${
           sidebarOpen ? 'w-64' : 'w-20'
@@ -213,7 +212,7 @@ const AdminDashboard = () => {
 
                {/* Content Section */}
                <div className="flex-1 p-6 overflow-auto">
-          {activeMenu === 'dashboard' && <h2 className="text-2xl font-semibold">Dashboard</h2>}
+          {activeMenu === 'dashboard' && <h2 className="text-2xl font-semibold"><Db/></h2>}
           {activeMenu === 'addUser' && <AddUser />} {/* Render AddUser component */}
           {activeMenu === 'roleMaster' && <RoleMaster />} {/* Render Subject component */}
           {activeMenu === 'institutionMaster' && <InstitutionMaster />} {/* Render Subject component */}
