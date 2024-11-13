@@ -13,6 +13,14 @@ const Cbse = () => {
     // State for form validation
     const [errors, setErrors] = useState({});
 
+    const [strengths, setStrengths] = useState({
+        pcm: { in12: '', coaching: '' },
+        pcb: { in12: '', coaching: '' },
+        commerce: { in12: '', coaching: '' },
+        humanities: { in12: '', coaching: '' },
+        other: { in12: '', coaching: '' }
+    });
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -71,6 +79,16 @@ const Cbse = () => {
 
     const handleRemovePgtTeacher = (id) => {
         setPgtTeachers(pgtTeachers.filter(teacher => teacher.id !== id));
+    };
+
+    const handleStrengthChange = (field, key, value) => {
+        setStrengths(prev => ({
+            ...prev,
+            [field]: {
+                ...prev[field],
+                [key]: value
+            }
+        }));
     };
 
     return (
@@ -261,6 +279,48 @@ const Cbse = () => {
                     </Grid>
                 ))}
             </Paper>
+
+                        {/* Strength Information Section */}
+                        <Paper elevation={3} sx={{ padding: 4, borderRadius: 4, mt: 4, background: '#fff', color: '#333' }}>
+                <Typography variant="h5" sx={{ mb: 2, color: '#ff8c00' }}>Strength Information</Typography>
+                
+                {/* Strength in 12th Row */}
+                <Typography variant="h6" sx={{ mt: 2, color: '#333' }}>Strength in 12th</Typography>
+                <Grid container spacing={3} sx={{ mt: 1 }}>
+                    {['pcm', 'pcb', 'commerce', 'humanities', 'other'].map((field) => (
+                        <Grid item xs={12} sm={6} md={2.4} key={`strength-in12-${field}`}>
+                            <TextField
+                                fullWidth
+                                label={field.toUpperCase()}
+                                variant="outlined"
+                                color="primary"
+                                type="number"
+                                value={strengths[field].in12}
+                                onChange={(e) => handleStrengthChange(field, 'in12', e.target.value)}
+                            />
+                        </Grid>
+                    ))}
+                </Grid>
+
+                {/* Strength in Coaching/Tuition Row */}
+                <Typography variant="h6" sx={{ mt: 2, color: '#333' }}>Strength in Coaching/Tuition</Typography>
+                <Grid container spacing={3} sx={{ mt: 1 }}>
+                    {['pcm', 'pcb', 'commerce', 'humanities', 'other'].map((field) => (
+                        <Grid item xs={12} sm={6} md={2.4} key={`strength-coaching-${field}`}>
+                            <TextField
+                                fullWidth
+                                label={field.toUpperCase()}
+                                variant="outlined"
+                                color="primary"
+                                type="number"
+                                value={strengths[field].coaching}
+                                onChange={(e) => handleStrengthChange(field, 'coaching', e.target.value)}
+                            />
+                        </Grid>
+                    ))}
+                </Grid>
+            </Paper>
+
 
             {/* Submit Button */}
             <Box sx={{ mt: 4, textAlign: 'center' }}>

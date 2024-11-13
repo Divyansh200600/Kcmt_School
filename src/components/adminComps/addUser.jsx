@@ -6,6 +6,7 @@ import Swal from 'sweetalert2';
 import { Visibility, VisibilityOff, Delete as DeleteIcon } from '@mui/icons-material';
 import { CircularProgress, TextField, IconButton, Button, Typography, Box, Grid, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const AddUser = () => {
   const [userData, setUserData] = useState({
@@ -21,6 +22,7 @@ const AddUser = () => {
   const [dataLoading, setDataLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [departments] = useState(['BCA', 'MCA', 'BBA', 'MBA', 'BSc', 'MSc', 'Science', 'BCom Hons.']);
+  const navigate = useNavigate(); // Initialize navigate function
 
   useEffect(() => {
     const getUsers = async () => {
@@ -86,6 +88,10 @@ const AddUser = () => {
       setUsers(usersList);
 
       Swal.fire('Success', 'User successfully added', 'success');
+
+      // Optional: Navigate to another page after adding the user if needed
+      // Example: navigate('/dashboard'); 
+      
     } catch (error) {
       Swal.fire('Error', `Error adding user: ${error.message}`, 'error');
     } finally {
