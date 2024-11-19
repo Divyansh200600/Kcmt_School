@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { FaSchool, FaBookOpen, FaUniversity, FaGraduationCap, FaChalkboardTeacher, FaDatabase } from "react-icons/fa";
+import { FaSchool, FaBookOpen, FaUniversity, FaGraduationCap, FaChalkboardTeacher, FaDatabase ,FaTelegram} from "react-icons/fa";
 import { getDoc, doc } from "firebase/firestore";
-import { auth, firestore } from "../../utils/firebaseConfig"; // Ensure firebaseConfig is correctly set
+import { auth, firestore } from "../../utils/firebaseConfig";
 import DataForm from '../../components/userComps/dataForm';
 
+import ICSE from "../../components/userComps/ICSE";
+import Reports from '../../components/userComps/reports';
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState("dataForm");
-  const [username, setUsername] = useState(""); // State to store username
+  const [username, setUsername] = useState(""); 
   const user = auth.currentUser; 
   useEffect(() => {
     // Fetch username from Firestore when the component mounts
@@ -37,7 +39,9 @@ const UserDashboard = () => {
       case "dataForm":
         return <div className="text-lg"><DataForm /></div>;
       case "icse":
-        return <div className="text-lg">Welcome to ICSe</div>;
+        return <div className="text-lg"><ICSE/></div>;
+        case "reports":
+        return <div className="text-lg"><Reports/></div>;
       case "cbse":
         return <div className="text-lg">Welcome to the CBSE School Dashboard.</div>;
       case "upBoard":
@@ -100,6 +104,13 @@ const UserDashboard = () => {
               <FaChalkboardTeacher className="text-lg" />
               <span>Coaching</span>
             </button>
+            <button
+              onClick={() => setActiveTab("reports")}
+              className={`flex items-center space-x-2 p-3 rounded-md ${activeTab === "reports" ? "bg-blue-700" : "hover:bg-blue-500"}`}
+            >
+              <FaTelegram className="text-lg" />
+              <span>Reports</span>
+            </button>
           </div>
         </div>
       </div>
@@ -109,7 +120,7 @@ const UserDashboard = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div className="text-3xl font-semibold text-gray-800">
-            {username ? `Welcome back, ${username}` : "Loading..."}
+            {username ? `Welcome , ${username}` : "Loading..."}
           </div>
         </div>
 
