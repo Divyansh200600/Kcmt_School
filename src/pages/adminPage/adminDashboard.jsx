@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Dashboard, Group, School, LocalLibrary, LocationOn, Person, Build, 
-  LibraryBooks, SchoolOutlined, Domain 
+  LibraryBooks, SchoolOutlined, Domain, ExpandMore, ExpandLess 
 } from '@mui/icons-material';
+import { Collapse } from '@mui/material';
 
 // All Masters Import here ---->
 import Db from '../../components/adminComps/dashboard';
@@ -18,9 +19,16 @@ import LocationSub from '../../components/adminComps/locationSub';
 import StreamMaster from '../../components/adminComps/streamMaster';
 import StaffMaster from '../../components/adminComps/staffMaster';
 
+
+// All Reports Imports Here ------>
+
+import Reports from '../../components/userComps/reports';
+
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true); // Default open sidebar
   const [activeMenu, setActiveMenu] = useState('dashboard');
+  const [mastersOpen, setMastersOpen] = useState(false); // Toggle for Masters section
+  const [reportsOpen, setReportsOpen] = useState(false); // Toggle for Reports section
 
   // Toggle sidebar on mobile screens
   const toggleSidebar = () => {
@@ -30,6 +38,16 @@ const AdminDashboard = () => {
   // Handle menu selection for active state
   const handleMenuClick = (menu) => {
     setActiveMenu(menu);
+  };
+
+  // Toggle expand/collapse for Masters section
+  const toggleMasters = () => {
+    setMastersOpen(!mastersOpen);
+  };
+
+  // Toggle expand/collapse for Reports section
+  const toggleReports = () => {
+    setReportsOpen(!reportsOpen);
   };
 
   return (
@@ -97,105 +115,136 @@ const AdminDashboard = () => {
             {sidebarOpen && <span className="font-medium">Add User</span>}
           </li>
 
-          {/* Role Master */}
-          <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'roleMaster' ? 'bg-gray-700' : ''
-            }`}
-            onClick={() => handleMenuClick('roleMaster')}
-          >
-            <Group />
-            {sidebarOpen && <span className="font-medium">Role Master</span>}
+          {/* Masters Section (Collapsible) */}
+          <li>
+            <div
+              className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                mastersOpen ? 'bg-gray-700' : ''
+              }`}
+              onClick={toggleMasters}
+            >
+              <Group />
+              {sidebarOpen && <span className="font-medium">Masters</span>}
+              <span className="ml-auto">
+                {mastersOpen ? <ExpandLess /> : <ExpandMore />}
+              </span>
+            </div>
+            <Collapse in={mastersOpen}>
+              <ul className="space-y-4 pl-8">
+                {/* Master Items */}
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'roleMaster' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('roleMaster')}
+                >
+                  <Group />
+                  {sidebarOpen && <span className="font-medium">Role Master</span>}
+                </li>
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'institutionMaster' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('institutionMaster')}
+                >
+                  <School />
+                  {sidebarOpen && <span className="font-medium">Institute Master</span>}
+                </li>
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'levelBoardMaster' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('levelBoardMaster')}
+                >
+                  <LocalLibrary />
+                  {sidebarOpen && <span className="font-medium">Level/Board Master</span>}
+                </li>
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'designationMaster' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('designationMaster')}
+                >
+                  <Person />
+                  {sidebarOpen && <span className="font-medium">Designation</span>}
+                </li>
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'sessionMaster' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('sessionMaster')}
+                >
+                  <LibraryBooks />
+                  {sidebarOpen && <span className="font-medium">Session Master</span>}
+                </li>
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'locationMaster' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('locationMaster')}
+                >
+                  <LocationOn />
+                  {sidebarOpen && <span className="font-medium">Region Master</span>}
+                </li>
+              </ul>
+            </Collapse>
           </li>
 
-          {/* Institute */}
-          <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'institutionMaster' ? 'bg-gray-700' : ''
-            }`}
-            onClick={() => handleMenuClick('institutionMaster')}
-          >
-            <School />
-            {sidebarOpen && <span className="font-medium">Institute Master</span>}
-          </li>
-
-          {/* Level */}
-          <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'levelBoardMaster' ? 'bg-gray-700' : ''
-            }`}
-            onClick={() => handleMenuClick('levelBoardMaster')}
-          >
-            <LocalLibrary />
-            {sidebarOpen && <span className="font-medium">level/Board Master</span>}
-          </li>
-
-          {/* Designation */}
-          <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'designationMaster' ? 'bg-gray-700' : ''
-            }`}
-            onClick={() => handleMenuClick('designationMaster')}
-          >
-            <Person />
-            {sidebarOpen && <span className="font-medium">Designation</span>}
-          </li>
-
-          {/* Session */}
-          <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'sessionMaster' ? 'bg-gray-700' : ''
-            }`}
-            onClick={() => handleMenuClick('sessionMaster')}
-          >
-            <LibraryBooks />
-            {sidebarOpen && <span className="font-medium">Session Master</span>}
-          </li>
-
-          {/* Location */}
-          <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'locationMaster' ? 'bg-gray-700' : ''
-            }`}
-            onClick={() => handleMenuClick('locationMaster')}
-          >
-            <LocationOn />
-            {sidebarOpen && <span className="font-medium">Location Master</span>}
-          </li>
-
-          {/* Location Sub */}
-          <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'locationSub' ? 'bg-gray-700' : ''
-            }`}
-            onClick={() => handleMenuClick('locationSub')}
-          >
-            <Domain />
-            {sidebarOpen && <span className="font-medium">Location Sub</span>}
-          </li>
-
-    
-
-          {/* Stream */}
-          <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'stream' ? 'bg-gray-700' : ''
-            }`}
-            onClick={() => handleMenuClick('stream')}
-          >
-            <SchoolOutlined />
-            {sidebarOpen && <span className="font-medium">Stream Master</span>}
-          </li>
-
-          {/* Staff Master */}
-          <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'staffMaster' ? 'bg-gray-700' : ''
-            }`}
-            onClick={() => handleMenuClick('staffMaster')}
-          >
-            <Build />
-            {sidebarOpen && <span className="font-medium">Staff Master</span>}
+          {/* Reports Section (Collapsible) */}
+          <li>
+            <div
+              className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                reportsOpen ? 'bg-gray-700' : ''
+              }`}
+              onClick={toggleReports}
+            >
+              <LibraryBooks />
+              {sidebarOpen && <span className="font-medium">Reports</span>}
+              <span className="ml-auto">
+                {reportsOpen ? <ExpandLess /> : <ExpandMore />}
+              </span>
+            </div>
+            <Collapse in={reportsOpen}>
+              <ul className="space-y-4 pl-8">
+                {/* Dummy Report Items */}
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'report1' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('report1')}
+                >
+                  <LibraryBooks />
+                  {sidebarOpen && <span className="font-medium">Report 1</span>}
+                </li>
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'report2' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('report2')}
+                >
+                  <LibraryBooks />
+                  {sidebarOpen && <span className="font-medium">Report 2</span>}
+                </li>
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'report3' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('report3')}
+                >
+                  <LibraryBooks />
+                  {sidebarOpen && <span className="font-medium">Report 3</span>}
+                </li>
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'report4' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('report4')}
+                >
+                  <LibraryBooks />
+                  {sidebarOpen && <span className="font-medium">Report 4</span>}
+                </li>
+              </ul>
+            </Collapse>
           </li>
         </ul>
       </div>
@@ -210,22 +259,23 @@ const AdminDashboard = () => {
           </div>
         </header>
 
-               {/* Content Section */}
-               <div className="flex-1 p-6 overflow-auto">
-          {activeMenu === 'dashboard' && <h2 className="text-2xl font-semibold"><Db/></h2>}
-          {activeMenu === 'addUser' && <AddUser />} {/* Render AddUser component */}
-          {activeMenu === 'roleMaster' && <RoleMaster />} {/* Render Subject component */}
-          {activeMenu === 'institutionMaster' && <InstitutionMaster />} {/* Render Subject component */}
-          {activeMenu === 'levelBoardMaster' && <LevelBoardMaster />} 
+        {/* Content Section */}
+        <div className="flex-1 p-6 overflow-auto">
+          {activeMenu === 'dashboard' && <h2 className="text-2xl font-semibold"><Db /></h2>}
+          {activeMenu === 'addUser' && <AddUser />}
+          {activeMenu === 'roleMaster' && <RoleMaster />}
+          {activeMenu === 'institutionMaster' && <InstitutionMaster />}
+          {activeMenu === 'levelBoardMaster' && <LevelBoardMaster />}
           {activeMenu === 'designationMaster' && <DesignationMaster />}
-          {activeMenu === 'sessionMaster' && <SessionsMaster />} 
+          {activeMenu === 'sessionMaster' && <SessionsMaster />}
           {activeMenu === 'locationMaster' && <LocationMaster />}
           {activeMenu === 'locationSub' && <LocationSub />}
-          {activeMenu === 'stream' && <StreamMaster />} 
+          {activeMenu === 'stream' && <StreamMaster />}
           {activeMenu === 'staffMaster' && <StaffMaster />}
-          
-
-          {/* Add other components based on menu selection */}
+          {activeMenu === 'report1' && <div><Reports/></div>}
+          {activeMenu === 'report2' && <div>Report 2 content</div>}
+          {activeMenu === 'report3' && <div>Report 3 content</div>}
+          {activeMenu === 'report4' && <div>Report 4 content</div>}
         </div>
       </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Grid, Box, Card, CardContent, Typography, Divider, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { Edit, Delete, AddCircle } from '@mui/icons-material';
 import Swal from 'sweetalert2';
-import { firestore } from '../../utils/firebaseConfig'; 
+import { firestore } from '../../utils/firebaseConfig';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 export default function LocationMaster() {
@@ -142,13 +142,22 @@ export default function LocationMaster() {
 
   return (
     <div style={{ padding: '20px' }}>
-      <Typography variant="h4" align="center" gutterBottom>Location Master</Typography>
+      <Typography variant="h4" align="center" gutterBottom>Region Master</Typography>
 
       <Grid container spacing={4}>
+
+        {/* Location Counter Display */}
+        <Grid item xs={12}>
+          <Typography variant="h6" color="textSecondary" style={{ fontWeight: 'bold' }}>
+            Total Regions: {locations.length}
+          </Typography>
+
+        </Grid>
+
         <Grid item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6">Locations</Typography>
+              <Typography variant="h6">Regions:</Typography>
               <Button variant="contained" color="primary" onClick={() => handleOpenDialog()} startIcon={<AddCircle />}>
                 Add Location
               </Button>

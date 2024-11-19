@@ -58,7 +58,7 @@ const UserDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {/* Sidebar */}
-      <div className="w-full md:w-64 bg-blue-600 text-white p-5 flex flex-col justify-between space-y-6">
+      <div className="w-full md:w-64 bg-[#1D4ED8] text-white p-5 flex flex-col justify-between space-y-6">
         <div className="flex flex-col space-y-6">
           <div className="text-2xl font-semibold">{username ? `${username}'s Dashboard` : "Loading..."}</div>
           <div className="flex flex-col space-y-2">
