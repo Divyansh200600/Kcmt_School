@@ -10,6 +10,8 @@ const RoleMaster = () => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [userCount, setUserCount] = useState(0);
+  const [adminCount, setAdminCount] = useState(0);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -20,8 +22,16 @@ const RoleMaster = () => {
           id: doc.id,
           ...doc.data(),
         }));
+        
         setUsers(userList);
         setFilteredUsers(userList);
+
+        // Count total users and admins
+        const totalUsers = userList.filter(user => user.role === 'user').length;
+        const totalAdmins = userList.filter(user => user.role === 'admin').length;
+
+        setUserCount(totalUsers);
+        setAdminCount(totalAdmins);
       } catch (error) {
         Swal.fire('Error', 'Failed to load users', 'error');
       } finally {
@@ -59,6 +69,13 @@ const RoleMaster = () => {
         prevFilteredUsers.map((user) => user.id === userId ? { ...user, role: newRole } : user)
       );
 
+      // Update counts after role change
+      const updatedUserCount = users.filter(user => user.role === 'user').length;
+      const updatedAdminCount = users.filter(user => user.role === 'admin').length;
+
+      setUserCount(updatedUserCount);
+      setAdminCount(updatedAdminCount);
+
       Swal.fire('Success', `Role updated to ${newRole}`, 'success');
     } catch (error) {
       Swal.fire('Error', 'Failed to update role', 'error');
@@ -68,6 +85,16 @@ const RoleMaster = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <h2 className="text-2xl font-semibold mb-6">Role Management</h2>
+
+      {/* Display total users and admins count */}
+      <div className="mb-6 flex justify-between">
+        <div className="bg-gray-800 text-white px-4 py-2 rounded-md">
+          <span>Total Users: </span>{userCount}
+        </div>
+        <div className="bg-gray-800 text-white px-4 py-2 rounded-md">
+          <span>Total Admins: </span>{adminCount}
+        </div>
+      </div>
 
       {/* Search field */}
       <div className="flex items-center mb-6 bg-white shadow-md rounded-md overflow-hidden">

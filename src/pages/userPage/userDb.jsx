@@ -3,7 +3,7 @@ import { FaSchool, FaBookOpen, FaUniversity, FaGraduationCap, FaChalkboardTeache
 import { getDoc, doc } from "firebase/firestore";
 import { auth, firestore } from "../../utils/firebaseConfig";
 import DataForm from '../../components/userComps/dataForm';
-
+import ManageDataForm from "../../components/userComps/manageDataForm";
 import ICSE from "../../components/userComps/ICSE";
 import Reports from '../../components/userComps/reports';
 const UserDashboard = () => {
@@ -38,6 +38,8 @@ const UserDashboard = () => {
     switch (activeTab) {
       case "dataForm":
         return <div className="text-lg"><DataForm /></div>;
+        case "manageDataForm":
+        return <div className="text-lg"><ManageDataForm /></div>;
       case "icse":
         return <div className="text-lg"><ICSE/></div>;
         case "reports":
@@ -68,6 +70,13 @@ const UserDashboard = () => {
             >
               <FaDatabase className="text-lg" />
               <span>Data Form</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("manageDataForm")}
+              className={`flex items-center space-x-2 p-3 rounded-md ${activeTab === "manageDataForm" ? "bg-blue-700" : "hover:bg-blue-500"}`}
+            >
+              <FaDatabase className="text-lg" />
+              <span>Manage Data Form</span>
             </button>
             <button
               onClick={() => setActiveTab("icse")}

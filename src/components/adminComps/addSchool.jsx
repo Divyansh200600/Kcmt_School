@@ -8,6 +8,7 @@ export default function AddSchool() {
   const [loading, setLoading] = useState(false); // Loading state for upload
   const [uploadedData, setUploadedData] = useState({}); // Store data for each board
   const [selectedBoard, setSelectedBoard] = useState(null); // Track selected board
+  const [boardCounts, setBoardCounts] = useState({}); // Store counts of schools per board
 
   // Fetch data from Firestore
   const fetchData = async () => {
@@ -16,16 +17,20 @@ export default function AddSchool() {
     const q = query(schoolRef, orderBy('SN', 'asc'));
     const querySnapshot = await getDocs(q);
     const data = {};
+    const counts = {};
 
     querySnapshot.forEach((doc) => {
       const board = doc.data().BOARD || 'Unknown';
       if (!data[board]) {
         data[board] = [];
+        counts[board] = 0; // Initialize count for each board
       }
       data[board].push(doc.data());
+      counts[board] += 1; // Increment count for the board
     });
 
     setUploadedData(data);
+    setBoardCounts(counts);
   };
 
   // Fetch data when the component mounts
@@ -113,10 +118,21 @@ export default function AddSchool() {
     setSelectedBoard(board); // Set the selected board to filter data
   };
 
+  // Get total schools count for the selected board
+  const getSelectedBoardCount = () => {
+    return selectedBoard ? boardCounts[selectedBoard] : 0; // Return count for selected board
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-4xl mx-auto bg-white shadow-md rounded-lg p-6">
         <h1 className="text-2xl font-bold mb-4 text-center">Upload School Data</h1>
+
+        {/* Display Total Schools for the Selected Board (Top Right Corner) */}
+        <div className="absolute top-4 right-4 bg-blue-500 text-white py-2 px-4 rounded-lg">
+          <span>Total Schools: </span>
+          {getSelectedBoardCount()} {/* Show the count for the selected board */}
+        </div>
 
         {/* File Upload */}
         <div className="flex flex-col items-center space-y-4 mb-4">

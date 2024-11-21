@@ -120,6 +120,11 @@ const InstitutionMaster = () => {
     <div className="p-6 bg-gray-100 min-h-screen">
       <h2 className="text-3xl font-bold mb-6 text-center">Institution Management</h2>
 
+      {/* Display total count of institutions */}
+      <div className="mb-6 text-center">
+        <span className="text-xl font-medium">Total Institutions: {institutions.length}</span>
+      </div>
+
       {/* Search bar for searching institutions */}
       <div className="mb-6">
         <TextField

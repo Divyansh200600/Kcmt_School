@@ -17,7 +17,7 @@ function App() {
       <AuthProvider>
         <div className="App">
           <Routes>
-            <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/SIS-login" element={<AdminLogin />} />
             <Route path="/login" element={<LoginPage />} />
 
             {/* Protected Routes */}

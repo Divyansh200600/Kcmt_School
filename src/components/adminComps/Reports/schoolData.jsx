@@ -11,6 +11,7 @@ export default function SchoolData() {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedSubLocation, setSelectedSubLocation] = useState('');
   const [availableSubLocations, setAvailableSubLocations] = useState([]);
+  const [boardTotals, setBoardTotals] = useState({}); // Track totals for each board
 
   // Fetch school data from Firestore on component load
   useEffect(() => {
@@ -24,6 +25,14 @@ export default function SchoolData() {
       }));
       setSchoolData(data);
       setFilteredData(data); // Initially show all data
+
+      // Calculate board totals
+      const totals = data.reduce((acc, item) => {
+        const board = item.BOARD;
+        acc[board] = (acc[board] || 0) + 1;
+        return acc;
+      }, {});
+      setBoardTotals(totals); // Store totals for each board
     };
 
     fetchData();
@@ -111,7 +120,7 @@ export default function SchoolData() {
                 }`}
                 onClick={() => setSelectedBoard(board)}
               >
-                {board}
+                {board} ({boardTotals[board] || 0})
               </button>
             ))}
           </div>

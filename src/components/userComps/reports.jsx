@@ -91,20 +91,28 @@ export default function Reports() {
     fetchBoards();
   }, []);
 
-  // Fetch board counts for selected location and sub-location
+  // Fetch data based on location and sub-location
   useEffect(() => {
     const fetchData = async () => {
-      if (!selectedLocation || !selectedSubLocation) return; // Don't fetch if no selection made
+      if (!selectedLocation) return; // Don't fetch if no location selected
 
       setLoading(true);
       try {
         const schoolDataRef = collection(firestore, "schoolData");
-        const locationSubLocationQuery = query(
-          schoolDataRef,
-          where("LOCATION", "==", selectedLocation),
-          where("SUB LOCATION", "==", selectedSubLocation)
-        );
-        const querySnapshot = await getDocs(locationSubLocationQuery);
+        let locationQuery;
+
+        // If sub-location is selected, filter by both location and sub-location
+        if (selectedSubLocation) {
+          locationQuery = query(
+            schoolDataRef,
+            where("LOCATION", "==", selectedLocation),
+            where("SUB LOCATION", "==", selectedSubLocation)
+          );
+        } else {
+          locationQuery = query(schoolDataRef, where("LOCATION", "==", selectedLocation));
+        }
+
+        const querySnapshot = await getDocs(locationQuery);
 
         // Initialize counts for each board type
         let boardCounts = {};
@@ -202,10 +210,10 @@ export default function Reports() {
       )}
 
       {/* Board Counts Table */}
-      {selectedLocation && selectedSubLocation && (
+      {selectedLocation && (
         <div>
           <h2 className="text-xl font-bold text-center text-gray-800 mb-4">
-            Data for {selectedLocation} - {selectedSubLocation}
+            Data for {selectedLocation} {selectedSubLocation && ` - ${selectedSubLocation}`}
           </h2>
           <table className="w-full border-collapse border border-gray-300">
             <thead>
@@ -230,7 +238,7 @@ export default function Reports() {
                   <td className="border border-gray-300 px-4 py-2 text-center">3</td>
                   <td className="border border-gray-300 px-4 py-2">Coaching Center</td>
                   <td className="border border-gray-300 px-4 py-2 text-center">8</td>
-                  <td className="border border-gray-300 px-4 py-2">All State Board</td>
+                  <td className="border border-gray-300 px-4 py-2">All Boards</td>
                 </tr>
               ))}
             </tbody>

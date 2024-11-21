@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link,useNavigate } from 'react-router-dom';
 import { 
   Dashboard, Group, School, LocalLibrary, LocationOn, Person, SchoolRounded, 
   LibraryBooks, SchoolOutlined, Domain, ExpandMore, ExpandLess 
 } from '@mui/icons-material';
 import { Collapse } from '@mui/material';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../utils/firebaseConfig'; 
 
 // All Masters Import here ---->
 import Db from '../../components/adminComps/dashboard';
@@ -19,7 +21,7 @@ import LocationSub from '../../components/adminComps/locationSub';
 import StreamMaster from '../../components/adminComps/streamMaster';
 import StaffMaster from '../../components/adminComps/staffMaster';
 import AddSchool from '../../components/adminComps/addSchool';
-
+import Swal from 'sweetalert2'; 
 // All Reports Imports Here ------>
 
 import Reports from '../../components/userComps/reports';
@@ -29,6 +31,7 @@ const AdminDashboard = () => {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [mastersOpen, setMastersOpen] = useState(false); // Toggle for Masters section
   const [reportsOpen, setReportsOpen] = useState(false); // Toggle for Reports section
+  const navigate = useNavigate(); 
 
   // Toggle sidebar on mobile screens
   const toggleSidebar = () => {
@@ -50,6 +53,52 @@ const AdminDashboard = () => {
     setReportsOpen(!reportsOpen);
   };
 
+  const handleLogout = async () => {
+    try {
+      // Show a toast-style confirmation before logout
+      Swal.fire({
+        title: 'Logging out...',
+        text: 'You are being logged out.',
+        icon: 'info',
+        toast: true, // Enables toast notification
+        position: 'top-right', // Position the toast in the top-right corner
+        showConfirmButton: false, // No need for a confirm button
+        timer: 2000, // Duration for the toast (in ms)
+        timerProgressBar: true, // Show a progress bar for the timer
+      });
+  
+      // Sign out from Firebase Authentication
+      await signOut(auth);
+  
+      // Show a success toast after logging out
+      Swal.fire({
+        title: 'Successfully logged out!',
+        icon: 'success',
+        toast: true,
+        position: 'top-right',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true,
+      });
+  
+      // Navigate to the login page
+      navigate('/SIS-login');
+    } catch (error) {
+      console.error("Error logging out:", error);
+  
+      // Show an error toast if there's a problem
+      Swal.fire({
+        title: 'Error logging out!',
+        text: 'There was an issue with logging out.',
+        icon: 'error',
+        toast: true,
+        position: 'top-right',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true,
+      });
+    }
+  };
   return (
     <div className="flex h-screen overflow-hidden bg-gray-100">
       {/* Internal CSS for custom scrollbar */}
@@ -264,8 +313,7 @@ const AdminDashboard = () => {
         {/* Header */}
         <header className="bg-gray-800 text-white p-4 flex justify-between items-center shadow-lg">
           <div className="flex space-x-4">
-            <button className="bg-blue-600 px-4 py-2 rounded-md hover:bg-blue-700 transition-all">Profile</button>
-            <button className="bg-red-600 px-4 py-2 rounded-md hover:bg-red-700 transition-all">Logout</button>
+            <button onClick={handleLogout} className="bg-red-600 px-4 py-2 rounded-md hover:bg-red-700 transition-all">Logout</button>
           </div>
         </header>
 
