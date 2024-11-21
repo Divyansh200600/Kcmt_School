@@ -21,8 +21,8 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
 
             {/* Protected Routes */}
-            <Route
-              path="/admin-dashboard" element={<ProtectedRoute element={AdminDashboard} allowedRoles={['admin']} />} />
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+
             <Route path="/user-dashboard" element={<ProtectedRoute element={UserDashboard} allowedRoles={['user']} />} />
             <Route path="/sub-admin" element={<SubAdmin />} />
             {/* <Route path="/management-dashboard" element={<ProtectedRoute element={ManagementDashboard} allowedRoles={['management']} />}          /> */}

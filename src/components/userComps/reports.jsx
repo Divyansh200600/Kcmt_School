@@ -1,94 +1,211 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { firestore } from "../../utils/firebaseConfig";
 
 export default function Reports() {
-  const [regions, setRegions] = useState([]); // List of regions
-  const [selectedRegion, setSelectedRegion] = useState(""); // Selected region
-  const [loading, setLoading] = useState(true); // Regions loading state
+  const [locations, setLocations] = useState([]); // List of locations
+  const [subLocations, setSubLocations] = useState([]); // List of sub-locations
+  const [boards, setBoards] = useState([]); // List of board types
+  const [selectedLocation, setSelectedLocation] = useState(""); // Selected location
+  const [selectedSubLocation, setSelectedSubLocation] = useState(""); // Selected sub-location
+  const [loading, setLoading] = useState(true); // Loading state
+  const [data, setData] = useState({}); // Data for the selected location and sub-location
 
-  // Dummy data for the table
-  const dummyData = {
-    School: {
-      CBSE: 5,
-      ICSE: 7,
-      UPBoard: 10,
-      Other: 4,
-    },
-    College: {
-      SomeCollege: 3,
-      OtherCollege: 6,
-    },
-    Coaching: {
-      CoachingCenter: 8,
-    },
-  };
-
-  // Fetch regions from Firestore
+  // Fetch all unique locations from Firestore
   useEffect(() => {
-    const fetchRegions = async () => {
+    const fetchLocations = async () => {
       try {
-        const locationsRef = collection(firestore, "locations");
-        const querySnapshot = await getDocs(locationsRef);
-        const fetchedRegions = [];
+        const schoolDataRef = collection(firestore, "schoolData");
+        const querySnapshot = await getDocs(schoolDataRef);
+        const fetchedLocations = new Set();
 
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          if (data.name) {
-            fetchedRegions.push(data.name);
+          if (data.LOCATION) {
+            fetchedLocations.add(data.LOCATION);
           }
         });
 
-        setRegions(fetchedRegions);
+        setLocations(Array.from(fetchedLocations));
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching regions: ", error);
+        console.error("Error fetching locations: ", error);
         setLoading(false);
       }
     };
 
-    fetchRegions();
+    fetchLocations();
   }, []);
 
-  // Handle region selection
-  const handleRegionChange = (event) => {
-    setSelectedRegion(event.target.value);
+  // Fetch sub-locations based on selected location
+  useEffect(() => {
+    const fetchSubLocations = async () => {
+      if (!selectedLocation) return; // Don't fetch if no location selected
+
+      setLoading(true);
+      try {
+        const schoolDataRef = collection(firestore, "schoolData");
+        const locationQuery = query(schoolDataRef, where("LOCATION", "==", selectedLocation));
+        const querySnapshot = await getDocs(locationQuery);
+
+        const fetchedSubLocations = new Set();
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data["SUB LOCATION"]) {
+            fetchedSubLocations.add(data["SUB LOCATION"]);
+          }
+        });
+
+        setSubLocations(Array.from(fetchedSubLocations));
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching sub-locations: ", error);
+        setLoading(false);
+      }
+    };
+
+    fetchSubLocations();
+  }, [selectedLocation]);
+
+  // Fetch distinct board types from Firestore
+  useEffect(() => {
+    const fetchBoards = async () => {
+      try {
+        const schoolDataRef = collection(firestore, "schoolData");
+        const querySnapshot = await getDocs(schoolDataRef);
+
+        const fetchedBoards = new Set();
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.BOARD) {
+            fetchedBoards.add(data.BOARD);
+          }
+        });
+
+        setBoards(Array.from(fetchedBoards));
+      } catch (error) {
+        console.error("Error fetching boards: ", error);
+      }
+    };
+
+    fetchBoards();
+  }, []);
+
+  // Fetch board counts for selected location and sub-location
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!selectedLocation || !selectedSubLocation) return; // Don't fetch if no selection made
+
+      setLoading(true);
+      try {
+        const schoolDataRef = collection(firestore, "schoolData");
+        const locationSubLocationQuery = query(
+          schoolDataRef,
+          where("LOCATION", "==", selectedLocation),
+          where("SUB LOCATION", "==", selectedSubLocation)
+        );
+        const querySnapshot = await getDocs(locationSubLocationQuery);
+
+        // Initialize counts for each board type
+        let boardCounts = {};
+        boards.forEach((board) => {
+          boardCounts[board] = 0;
+        });
+
+        // Count documents by BOARD
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const board = data.BOARD;
+          if (boardCounts[board] !== undefined) {
+            boardCounts[board]++;
+          }
+        });
+
+        setData(boardCounts); // Set the data state to the counts
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching school data: ", error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [selectedLocation, selectedSubLocation, boards]);
+
+  // Handle location selection
+  const handleLocationChange = (event) => {
+    setSelectedLocation(event.target.value);
+    setSelectedSubLocation(""); // Reset sub-location when location changes
+  };
+
+  // Handle sub-location selection
+  const handleSubLocationChange = (event) => {
+    setSelectedSubLocation(event.target.value);
   };
 
   return (
     <div className="max-w-5xl mx-auto p-6 bg-white shadow-md rounded-lg">
-     
+      <h1 className="text-3xl font-bold">School Information Report:</h1>
+
+      {/* Location Selector */}
       <div className="mb-6">
-        <label
-          htmlFor="region-selector"
-          className="block text-gray-700 font-medium mb-2"
-        >
-          Select Region:
+        <label htmlFor="location-selector" className="block text-gray-700 font-medium mb-2">
+          Select Location:
         </label>
         {loading ? (
-          <p className="text-gray-500 text-center">Loading regions...</p>
+          <p className="text-gray-500 text-center">Loading locations...</p>
         ) : (
           <select
-            id="region-selector"
+            id="location-selector"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={selectedRegion}
-            onChange={handleRegionChange}
+            value={selectedLocation}
+            onChange={handleLocationChange}
           >
             <option value="" disabled>
-              -- Select a Region --
+              -- Select a Location --
             </option>
-            {regions.map((region, index) => (
-              <option key={index} value={region}>
-                {region}
+            {locations.map((location, index) => (
+              <option key={index} value={location}>
+                {location}
               </option>
             ))}
           </select>
         )}
       </div>
-      {selectedRegion && (
+
+      {/* Sub-location Selector */}
+      {selectedLocation && (
+        <div className="mb-6">
+          <label htmlFor="sub-location-selector" className="block text-gray-700 font-medium mb-2">
+            Select Sub Location:
+          </label>
+          {loading ? (
+            <p className="text-gray-500 text-center">Loading sub-locations...</p>
+          ) : (
+            <select
+              id="sub-location-selector"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={selectedSubLocation}
+              onChange={handleSubLocationChange}
+            >
+              <option value="" disabled>
+                -- Select a Sub Location --
+              </option>
+              {subLocations.map((subLocation, index) => (
+                <option key={index} value={subLocation}>
+                  {subLocation}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+
+      {/* Board Counts Table */}
+      {selectedLocation && selectedSubLocation && (
         <div>
           <h2 className="text-xl font-bold text-center text-gray-800 mb-4">
-            Data for {selectedRegion}
+            Data for {selectedLocation} - {selectedSubLocation}
           </h2>
           <table className="w-full border-collapse border border-gray-300">
             <thead>
@@ -103,62 +220,19 @@ export default function Reports() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td className="border border-gray-300 px-4 py-2">CBSE</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">
-                  {dummyData.School.CBSE}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">Some College</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">
-                  {dummyData.College.SomeCollege}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">Coaching Center</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">
-                  {dummyData.Coaching.CoachingCenter}
-                </td>
-              </tr>
-              <tr>
-                <td className="border border-gray-300 px-4 py-2">ICSE</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">
-                  {dummyData.School.ICSE}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">Other College</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">
-                  {dummyData.College.OtherCollege}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">Coaching Center</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">
-                  {dummyData.Coaching.CoachingCenter}
-                </td>
-              </tr>
-              <tr>
-                <td className="border border-gray-300 px-4 py-2">UP Board</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">
-                  {dummyData.School.UPBoard}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">Some College</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">
-                  {dummyData.College.SomeCollege}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">Coaching Center</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">
-                  {dummyData.Coaching.CoachingCenter}
-                </td>
-              </tr>
-              <tr>
-                <td className="border border-gray-300 px-4 py-2">Other</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">
-                  {dummyData.School.Other}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">Other College</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">
-                  {dummyData.College.OtherCollege}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">Coaching Center</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">
-                  {dummyData.Coaching.CoachingCenter}
-                </td>
-              </tr>
+              {boards.map((boardType) => (
+                <tr key={boardType}>
+                  <td className="border border-gray-300 px-4 py-2">{boardType}</td>
+                  <td className="border border-gray-300 px-4 py-2 text-center">
+                    {data[boardType] || "N/A"}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2">Some College</td>
+                  <td className="border border-gray-300 px-4 py-2 text-center">3</td>
+                  <td className="border border-gray-300 px-4 py-2">Coaching Center</td>
+                  <td className="border border-gray-300 px-4 py-2 text-center">8</td>
+                  <td className="border border-gray-300 px-4 py-2">All State Board</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

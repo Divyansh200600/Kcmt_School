@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Dashboard, Group, School, LocalLibrary, LocationOn, Person, Build, 
+  Dashboard, Group, School, LocalLibrary, LocationOn, Person, SchoolRounded, 
   LibraryBooks, SchoolOutlined, Domain, ExpandMore, ExpandLess 
 } from '@mui/icons-material';
 import { Collapse } from '@mui/material';
@@ -18,12 +18,12 @@ import LocationMaster from '../../components/adminComps/locationMaster';
 import LocationSub from '../../components/adminComps/locationSub';
 import StreamMaster from '../../components/adminComps/streamMaster';
 import StaffMaster from '../../components/adminComps/staffMaster';
-
+import AddSchool from '../../components/adminComps/addSchool';
 
 // All Reports Imports Here ------>
 
 import Reports from '../../components/userComps/reports';
-
+import SchoolData from '../../components/adminComps/Reports/schoolData';
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true); // Default open sidebar
   const [activeMenu, setActiveMenu] = useState('dashboard');
@@ -113,6 +113,16 @@ const AdminDashboard = () => {
           >
             <Person />
             {sidebarOpen && <span className="font-medium">Add User</span>}
+          </li>
+
+          <li
+            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+              activeMenu === 'addSchool' ? 'bg-gray-700' : ''
+            }`}
+            onClick={() => handleMenuClick('addSchool')}
+          >
+            <SchoolRounded />
+            {sidebarOpen && <span className="font-medium">Add School</span>}
           </li>
 
           {/* Masters Section (Collapsible) */}
@@ -214,7 +224,7 @@ const AdminDashboard = () => {
                   onClick={() => handleMenuClick('report1')}
                 >
                   <LibraryBooks />
-                  {sidebarOpen && <span className="font-medium">Report 1</span>}
+                  {sidebarOpen && <span className="font-medium">School Information Report</span>}
                 </li>
                 <li
                   className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
@@ -223,7 +233,7 @@ const AdminDashboard = () => {
                   onClick={() => handleMenuClick('report2')}
                 >
                   <LibraryBooks />
-                  {sidebarOpen && <span className="font-medium">Report 2</span>}
+                  {sidebarOpen && <span className="font-medium">School Data</span>}
                 </li>
                 <li
                   className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
@@ -272,8 +282,9 @@ const AdminDashboard = () => {
           {activeMenu === 'locationSub' && <LocationSub />}
           {activeMenu === 'stream' && <StreamMaster />}
           {activeMenu === 'staffMaster' && <StaffMaster />}
+          {activeMenu === 'addSchool' && <AddSchool />}
           {activeMenu === 'report1' && <div><Reports/></div>}
-          {activeMenu === 'report2' && <div>Report 2 content</div>}
+          {activeMenu === 'report2' && <div><SchoolData/></div>}
           {activeMenu === 'report3' && <div>Report 3 content</div>}
           {activeMenu === 'report4' && <div>Report 4 content</div>}
         </div>
