@@ -76,7 +76,7 @@ const UserDashboard = () => {
               className={`flex items-center space-x-2 p-3 rounded-md ${activeTab === "manageDataForm" ? "bg-blue-700" : "hover:bg-blue-500"}`}
             >
               <FaDatabase className="text-lg" />
-              <span>Manage Data Form</span>
+              <span>View Data Form</span>
             </button>
             <button
               onClick={() => setActiveTab("icse")}

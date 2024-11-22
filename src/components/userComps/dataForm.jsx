@@ -1,20 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { TextField, Grid, Box, Button, Typography, IconButton, Paper, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { AddCircle, RemoveCircle, Save, Upload as UploadIcon } from '@mui/icons-material';
-import { auth, firestore } from '../../utils/firebaseConfig';
+import {
+    TextField, Grid, Box, Button, Typography, IconButton, Paper, Select, MenuItem, FormControl, InputLabel
+} from '@mui/material';
+import { AddCircle, RemoveCircle, Save, Upload as UploadIcon, Delete } from '@mui/icons-material';
+import { auth, firestore, storage } from '../../utils/firebaseConfig';
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { getAuth } from "firebase/auth";
+import Swal from 'sweetalert2';
 
 const DataForm = () => {
     const [graduationTeachers, setGraduationTeachers] = useState([{ id: Date.now() }]);
     const [pgtTeachers, setPgtTeachers] = useState([{ id: Date.now() }]);
+
     const [userDetails, setUserDetails] = useState(null);
     const [boards, setBoards] = useState([]);
     const [regions, setRegions] = useState([]);
     const [selectedBoard, setSelectedBoard] = useState('');
     const [selectedRegion, setSelectedRegion] = useState('');
-
     const [errors, setErrors] = useState({});
+    const [files, setFiles] = useState([]);
+
+
+    const [schoolName, setSchoolName] = useState('');
+    const [schoolAddress, setSchoolAddress] = useState('');
+    const [date, setDate] = useState('');
+    const [noOfStudents, setNoOfStudents] = useState('');
+    const [topicCovered, setTopicCovered] = useState('');
+    const [visitRemark, setVisitRemark] = useState('');
+
+    // Add these state variables for Principal Information
+    const [principalName, setPrincipalName] = useState('');
+    const [principalContactNo, setPrincipalContactNo] = useState('');
+    const [principalDob, setPrincipalDob] = useState('');
+    const [principalDoa, setPrincipalDoa] = useState('');
+    const [principalEmail, setPrincipalEmail] = useState('');
+
+    const user = auth.currentUser;
 
     const [strengths, setStrengths] = useState({
         pcm: { in12: '', coaching: '' },
@@ -27,20 +52,18 @@ const DataForm = () => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // If the user is authenticated, fetch user details from Firestore using UID
-                const userDocRef = doc(firestore, "users", user.uid);  // Adjust path as per your Firestore structure
+                const userDocRef = doc(firestore, "users", user.uid);
                 const userDocSnap = await getDoc(userDocRef);
-
                 if (userDocSnap.exists()) {
-                    setUserDetails(userDocSnap.data()); // Set user details
+                    setUserDetails(userDocSnap.data());
                 } else {
                     console.log("No user document found in Firestore!");
                 }
             } else {
-                setUserDetails(null); // Reset if user is not authenticated
+                setUserDetails(null);
             }
         });
-        return () => unsubscribe(); // Clean up the subscription
+        return () => unsubscribe();
     }, []);
 
     useEffect(() => {
@@ -80,17 +103,12 @@ const DataForm = () => {
         setSelectedBoard(event.target.value);
     };
 
-    // Handle change for region selection
     const handleRegionChange = (event) => {
         setSelectedRegion(event.target.value);
     };
 
-
-
-    // Helper function for validating form
     const validateForm = () => {
         const newErrors = {};
-        // Check if required fields are filled
         graduationTeachers.forEach((teacher, index) => {
             if (!teacher.name) newErrors[`graduationName-${index}`] = 'Name is required';
             if (!teacher.contactNo) newErrors[`graduationContactNo-${index}`] = 'Contact No is required';
@@ -101,15 +119,6 @@ const DataForm = () => {
         });
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
-    };
-
-    const handleSubmit = () => {
-        if (validateForm()) {
-            // Proceed with submission
-            console.log("Form submitted successfully");
-        } else {
-            console.log("Form has errors");
-        }
     };
 
     const handleAddGraduationTeacher = () => {
@@ -138,16 +147,145 @@ const DataForm = () => {
         }));
     };
 
+    const handleChangeFiles = (event) => {
+        const newFiles = Array.from(event.target.files);
+        setFiles([...files, ...newFiles]);
+    };
+
+    const handleRemoveFile = (index) => {
+        setFiles(files.filter((_, fileIndex) => fileIndex !== index));
+    };
+
+    const handleSubmit = async () => {
+        if (validateForm()) {
+            const dataFormId = `DF-${Date.now()}`; // Generate unique dataFormId
+
+            // Upload files to storage and get URLs
+            const uploadFiles = async (file) => {
+                const fileRef = ref(storage, `users/${user.uid}/dataForms/${dataFormId}/${file.name}`);
+                await uploadBytes(fileRef, file);
+                return await getDownloadURL(fileRef);
+            };
+
+            try {
+                // Map file URLs
+                const uploadedFileURLs = await Promise.all(files.map(file => uploadFiles(file)));
+
+                // Prepare data for Firestore including the new fields
+                const dataToSave = {
+                    userDetails: userDetails,
+                    graduationTeachers,
+                    pgtTeachers,
+                    strengths,
+                    selectedBoard,
+                    selectedRegion,
+                    principalInfo: {
+                        name: principalName,
+                        contactNo: principalContactNo,
+                        dob: principalDob,
+                        doa: principalDoa,
+                        email: principalEmail,
+                    },
+                    schoolDetails: {
+                        schoolName,
+                        schoolAddress,
+                        date,
+                        noOfStudents,
+                        topicCovered,
+                        visitRemark,
+                    },
+                    documentUrls: uploadedFileURLs, // Add uploaded file URLs
+                };
+
+                // Save to Firestore
+                await setDoc(doc(firestore, `users/${user.uid}/dataForms/${dataFormId}`), dataToSave);
+
+                // Success notification
+                Swal.fire({
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Form submitted successfully!',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+
+                // Clear form fields
+                setGraduationTeachers([{ id: Date.now() }]);
+                setPgtTeachers([{ id: Date.now() }]);
+                setFiles([]);
+                setSchoolName('');
+                setSchoolAddress('');
+                setDate('');
+                setNoOfStudents('');
+                setTopicCovered('');
+                setVisitRemark('');
+
+            } catch (error) {
+                console.error('Error submitting form:', error);
+                // Error notification
+                Swal.fire({
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'An error occurred while submitting the form.',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            }
+        } else {
+            // Error notification
+            Swal.fire({
+                position: 'top-end',
+                icon: 'error',
+                title: 'Please fix the errors in the form.',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
+    };
+
+
+
+
     return (
         <Box sx={{ padding: 4, background: 'linear-gradient(to right, #f0f0e8, #e8e0d8)', minHeight: '100vh', color: '#333' }}>
+            <ToastContainer autoClose={5000} />
 
             {/* User Information Section */}
             <Paper elevation={3} sx={{ padding: 4, borderRadius: 4, mt: 3, background: '#fff', color: '#333' }}>
                 <Typography variant="h5" sx={{ mb: 2, color: '#ff8c00' }}>User Information</Typography>
+
                 <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="UID" variant="outlined" color="primary" value={userDetails?.uid || ''} disabled /></Grid>
-                    <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="Faculty Name" variant="outlined" color="primary" value={userDetails?.username || ''} disabled /></Grid>
-                    <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="Department" variant="outlined" color="primary" value={userDetails?.department || ''} disabled /></Grid>
+                    {/* User Details Section */}
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField
+                            fullWidth
+                            label="UID"
+                            variant="outlined"
+                            color="primary"
+                            value={userDetails?.uid || ''}
+                            disabled
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField
+                            fullWidth
+                            label="Faculty Name"
+                            variant="outlined"
+                            color="primary"
+                            value={userDetails?.username || ''}
+                            disabled
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField
+                            fullWidth
+                            label="Department"
+                            variant="outlined"
+                            color="primary"
+                            value={userDetails?.department || ''}
+                            disabled
+                        />
+                    </Grid>
                     <Grid item xs={12} sm={6} md={3}>
                         <FormControl fullWidth>
                             <InputLabel id="region-label">Region</InputLabel>
@@ -157,15 +295,14 @@ const DataForm = () => {
                                 onChange={handleRegionChange}
                                 label="Region"
                             >
-                                {regions.map(region => (
+                                {regions.map((region) => (
                                     <MenuItem key={region.id} value={region.id}>
                                         {region.name}
                                     </MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
-                    </Grid>                   <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="School Name" variant="outlined" color="primary" /></Grid>
-                    <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="School Address" variant="outlined" color="primary" /></Grid>
+                    </Grid>
                     <Grid item xs={12} sm={6} md={3}>
                         <FormControl fullWidth>
                             <InputLabel id="board-label">Board</InputLabel>
@@ -175,51 +312,185 @@ const DataForm = () => {
                                 onChange={handleBoardChange}
                                 label="Board"
                             >
-                                {boards.map(board => (
+                                {boards.map((board) => (
                                     <MenuItem key={board.id} value={board.id}>
                                         {board.name}
                                     </MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
-                    </Grid>                  <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="Date" type="date" variant="outlined" InputLabelProps={{ shrink: true }} color="primary" /></Grid>
-                    <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="No. of Students" type="number" variant="outlined" color="primary" /></Grid>
-                    <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="Topic Covered" variant="outlined" color="primary" /></Grid>
-                    <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="Visit Remark" variant="outlined" color="primary" /></Grid>
+                    </Grid>
+
+                    {/* School Information Section */}
                     <Grid item xs={12} sm={6} md={3}>
-                        <Button variant="contained" color="primary" fullWidth startIcon={<UploadIcon />}>Upload Document</Button>
+                        <TextField
+                            fullWidth
+                            label="School Name"
+                            variant="outlined"
+                            color="primary"
+                            value={schoolName}
+                            onChange={(e) => setSchoolName(e.target.value)} // Bind state
+                        />
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
-                        <Button variant="contained" color="primary" fullWidth startIcon={<UploadIcon />}>Upload Images</Button>
+                        <TextField
+                            fullWidth
+                            label="School Address"
+                            variant="outlined"
+                            color="primary"
+                            value={schoolAddress}
+                            onChange={(e) => setSchoolAddress(e.target.value)} // Bind state
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField
+                            fullWidth
+                            label="Date"
+                            type="date"
+                            variant="outlined"
+                            InputLabelProps={{ shrink: true }}
+                            color="primary"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)} // Bind state
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField
+                            fullWidth
+                            label="No. of Students"
+                            type="number"
+                            variant="outlined"
+                            color="primary"
+                            value={noOfStudents}
+                            onChange={(e) => setNoOfStudents(e.target.value)} // Bind state
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField
+                            fullWidth
+                            label="Topic Covered"
+                            variant="outlined"
+                            color="primary"
+                            value={topicCovered}
+                            onChange={(e) => setTopicCovered(e.target.value)} // Bind state
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField
+                            fullWidth
+                            label="Visit Remark"
+                            variant="outlined"
+                            color="primary"
+                            value={visitRemark}
+                            onChange={(e) => setVisitRemark(e.target.value)} // Bind state
+                        />
+                    </Grid>
+
+                    {/* File Upload Section */}
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Button
+                            component="label"
+                            variant="contained"
+                            color="primary"
+                            fullWidth
+                            startIcon={<UploadIcon />}
+                            sx={{ mb: 2 }}
+                        >
+                            Upload Document
+                            <input type="file" onChange={handleChangeFiles} style={{ display: 'none' }} multiple />
+                        </Button>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Button
+                            component="label"
+                            variant="contained"
+                            color="primary"
+                            fullWidth
+                            startIcon={<UploadIcon />}
+                            sx={{ mb: 2 }}
+                        >
+                            Upload Images
+                            <input type="file" onChange={handleChangeFiles} style={{ display: 'none' }} multiple />
+                        </Button>
                     </Grid>
                 </Grid>
+
+                {/* Displaying Uploaded Files */}
+                <Box mt={2}>
+                    {files.map((file, index) => (
+                        <Box key={index} display="flex" alignItems="center" mb={1}>
+                            <Typography variant="body2" sx={{ flex: 1 }}>{file.name}</Typography>
+                            <IconButton onClick={() => handleRemoveFile(index)} color="error">
+                                <Delete />
+                            </IconButton>
+                        </Box>
+                    ))}
+                </Box>
             </Paper>
+
 
             {/* Principal Information Section */}
             <Paper elevation={3} sx={{ padding: 4, borderRadius: 4, mt: 4, background: '#fff', color: '#333' }}>
                 <Typography variant="h5" sx={{ mb: 2, color: '#ff8c00' }}>Principal Information</Typography>
                 <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="Principal Name" variant="outlined" color="primary" /></Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField
+                            fullWidth
+                            label="Principal Name"
+                            variant="outlined"
+                            color="primary"
+                            value={principalName}
+                            onChange={(e) => setPrincipalName(e.target.value)} // Bind state
+                        />
+                    </Grid>
                     <Grid item xs={12} sm={6} md={3}>
                         <TextField
                             fullWidth
                             label="Principal Contact No"
                             variant="outlined"
                             color="primary"
-                            onChange={(e) => {
-                                const numericValue = e.target.value.replace(/[^0-9]/g, ''); // Remove non-numeric characters
-                                e.target.value = numericValue; // Update the input value directly
-                            }}
-                            inputProps={{
-                                inputMode: 'numeric', // Show numeric keyboard on mobile
-                                pattern: '[0-9]*',    // Ensure only numeric values
-                            }}
+                            value={principalContactNo}
+                            onChange={(e) => setPrincipalContactNo(e.target.value)} // Bind state
+                            inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="DOB" type="date" variant="outlined" InputLabelProps={{ shrink: true }} color="primary" /></Grid>
-                    <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="DOA" type="date" variant="outlined" InputLabelProps={{ shrink: true }} color="primary" /></Grid>
-                    <Grid item xs={12} sm={6} md={3}><TextField fullWidth label="Email" type="email" variant="outlined" color="primary" /></Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField
+                            fullWidth
+                            label="DOB"
+                            type="date"
+                            variant="outlined"
+                            InputLabelProps={{ shrink: true }}
+                            color="primary"
+                            value={principalDob}
+                            onChange={(e) => setPrincipalDob(e.target.value)} // Bind state
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField
+                            fullWidth
+                            label="DOA"
+                            type="date"
+                            variant="outlined"
+                            InputLabelProps={{ shrink: true }}
+                            color="primary"
+                            value={principalDoa}
+                            onChange={(e) => setPrincipalDoa(e.target.value)} // Bind state
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField
+                            fullWidth
+                            label="Email"
+                            type="email"
+                            variant="outlined"
+                            color="primary"
+                            value={principalEmail}
+                            onChange={(e) => setPrincipalEmail(e.target.value)} // Bind state
+                        />
+                    </Grid>
                 </Grid>
+
             </Paper>
 
             {/* Graduation Teacher Information Section */}
@@ -239,7 +510,6 @@ const DataForm = () => {
                                     newTeachers[index].name = e.target.value;
                                     setGraduationTeachers(newTeachers);
                                 }}
-
                                 error={Boolean(errors[`graduationName-${index}`])}
                                 helperText={errors[`graduationName-${index}`]}
                             />
@@ -252,40 +522,24 @@ const DataForm = () => {
                                 color="primary"
                                 value={teacher.contactNo || ''}
                                 onChange={(e) => {
-                                    // Sanitize the input to ensure it only contains digits (0-9)
-                                    const numericValue = e.target.value.replace(/[^0-9]/g, ''); // Remove non-numeric characters
+                                    const numericValue = e.target.value.replace(/[^0-9]/g, '');
                                     const newTeachers = [...graduationTeachers];
-                                    newTeachers[index].contactNo = numericValue; // Update the contact number with sanitized input
+                                    newTeachers[index].contactNo = numericValue;
                                     setGraduationTeachers(newTeachers);
                                 }}
                                 inputProps={{
                                     inputMode: 'numeric',
-                                    pattern: '[0-9]*',      // Ensure only numeric values are allowed in some browsers
+                                    pattern: '[0-9]*',
                                 }}
                                 error={Boolean(errors[`graduationContactNo-${index}`])}
                                 helperText={errors[`graduationContactNo-${index}`]}
                             />
                         </Grid>
-
                         <Grid item xs={12} sm={6} md={3}>
-                            <TextField
-                                fullWidth
-                                label="DOB"
-                                type="date"
-                                variant="outlined"
-                                InputLabelProps={{ shrink: true }}
-                                color="primary"
-                            />
+                            <TextField fullWidth label="DOB" type="date" variant="outlined" InputLabelProps={{ shrink: true }} color="primary" />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
-                            <TextField
-                                fullWidth
-                                label="DOA"
-                                type="date"
-                                variant="outlined"
-                                InputLabelProps={{ shrink: true }}
-                                color="primary"
-                            />
+                            <TextField fullWidth label="DOA" type="date" variant="outlined" InputLabelProps={{ shrink: true }} color="primary" />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
                             <TextField fullWidth label="Subject" variant="outlined" color="primary" />
@@ -334,40 +588,24 @@ const DataForm = () => {
                                 color="primary"
                                 value={teacher.contactNo || ''}
                                 onChange={(e) => {
-                                    // Sanitize the input to ensure it only contains digits (0-9)
-                                    const numericValue = e.target.value.replace(/[^0-9]/g, ''); // Remove non-numeric characters
+                                    const numericValue = e.target.value.replace(/[^0-9]/g, '');
                                     const newTeachers = [...pgtTeachers];
-                                    newTeachers[index].contactNo = numericValue; // Update the contact number with sanitized input
+                                    newTeachers[index].contactNo = numericValue;
                                     setPgtTeachers(newTeachers);
                                 }}
                                 inputProps={{
-                                    inputMode: 'numeric',   // Show numeric keyboard on mobile devices
-                                    pattern: '[0-9]*',      // Ensure only numeric values are allowed in some browsers
+                                    inputMode: 'numeric',
+                                    pattern: '[0-9]*',
                                 }}
                                 error={Boolean(errors[`pgtContactNo-${index}`])}
                                 helperText={errors[`pgtContactNo-${index}`]}
                             />
                         </Grid>
-
                         <Grid item xs={12} sm={6} md={3}>
-                            <TextField
-                                fullWidth
-                                label="DOB"
-                                type="date"
-                                variant="outlined"
-                                InputLabelProps={{ shrink: true }}
-                                color="primary"
-                            />
+                            <TextField fullWidth label="DOB" type="date" variant="outlined" InputLabelProps={{ shrink: true }} color="primary" />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
-                            <TextField
-                                fullWidth
-                                label="DOA"
-                                type="date"
-                                variant="outlined"
-                                InputLabelProps={{ shrink: true }}
-                                color="primary"
-                            />
+                            <TextField fullWidth label="DOA" type="date" variant="outlined" InputLabelProps={{ shrink: true }} color="primary" />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
                             <TextField fullWidth label="Subject" variant="outlined" color="primary" />
@@ -391,7 +629,6 @@ const DataForm = () => {
             <Paper elevation={3} sx={{ padding: 4, borderRadius: 4, mt: 4, background: '#fff', color: '#333' }}>
                 <Typography variant="h5" sx={{ mb: 2, color: '#ff8c00' }}>Strength Information</Typography>
 
-                {/* Strength in 12th Row */}
                 <Typography variant="h6" sx={{ mt: 2, color: '#333' }}>Strength in 12th</Typography>
                 <Grid container spacing={3} sx={{ mt: 1 }}>
                     {['pcm', 'pcb', 'commerce', 'humanities', 'other'].map((field) => (
@@ -409,7 +646,6 @@ const DataForm = () => {
                     ))}
                 </Grid>
 
-                {/* Strength in Coaching/Tuition Row */}
                 <Typography variant="h6" sx={{ mt: 2, color: '#333' }}>Strength in Coaching/Tuition</Typography>
                 <Grid container spacing={3} sx={{ mt: 1 }}>
                     {['pcm', 'pcb', 'commerce', 'humanities', 'other'].map((field) => (
@@ -428,8 +664,6 @@ const DataForm = () => {
                 </Grid>
             </Paper>
 
-
-            {/* Submit Button */}
             <Box sx={{ mt: 4, textAlign: 'center' }}>
                 <Button variant="contained" color="success" size="large" startIcon={<Save />} onClick={handleSubmit}>Submit</Button>
             </Box>
