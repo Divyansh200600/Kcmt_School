@@ -9,12 +9,13 @@ import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { getAuth } from "firebase/auth";
 import Swal from 'sweetalert2';
+import CircularProgress from '@mui/material/CircularProgress';
 
 const DataForm = () => {
     const [graduationTeachers, setGraduationTeachers] = useState([{ id: Date.now() }]);
     const [pgtTeachers, setPgtTeachers] = useState([{ id: Date.now() }]);
+    const [isLoading, setIsLoading] = useState(false);
 
     const [userDetails, setUserDetails] = useState(null);
     const [boards, setBoards] = useState([]);
@@ -23,7 +24,6 @@ const DataForm = () => {
     const [selectedRegion, setSelectedRegion] = useState('');
     const [errors, setErrors] = useState({});
     const [files, setFiles] = useState([]);
-
 
     const [schoolName, setSchoolName] = useState('');
     const [schoolAddress, setSchoolAddress] = useState('');
@@ -38,7 +38,6 @@ const DataForm = () => {
     const [principalDob, setPrincipalDob] = useState('');
     const [principalDoa, setPrincipalDoa] = useState('');
     const [principalEmail, setPrincipalEmail] = useState('');
-
     const user = auth.currentUser;
 
     const [strengths, setStrengths] = useState({
@@ -46,7 +45,7 @@ const DataForm = () => {
         pcb: { in12: '', coaching: '' },
         commerce: { in12: '', coaching: '' },
         humanities: { in12: '', coaching: '' },
-        other: { in12: '', coaching: '' }
+        other: { in12: '', coaching: '' },
     });
 
     useEffect(() => {
@@ -156,26 +155,44 @@ const DataForm = () => {
         setFiles(files.filter((_, fileIndex) => fileIndex !== index));
     };
 
+
     const handleSubmit = async () => {
         if (validateForm()) {
+            setIsLoading(true); // Show loader
             const dataFormId = `DF-${Date.now()}`; // Generate unique dataFormId
-
+    
             // Upload files to storage and get URLs
             const uploadFiles = async (file) => {
                 const fileRef = ref(storage, `users/${user.uid}/dataForms/${dataFormId}/${file.name}`);
                 await uploadBytes(fileRef, file);
                 return await getDownloadURL(fileRef);
             };
-
+    
             try {
                 // Map file URLs
                 const uploadedFileURLs = await Promise.all(files.map(file => uploadFiles(file)));
-
+    
                 // Prepare data for Firestore including the new fields
                 const dataToSave = {
-                    userDetails: userDetails,
-                    graduationTeachers,
-                    pgtTeachers,
+                    userDetails,
+                    graduationTeachers: graduationTeachers.map(teacher => ({
+                        ...teacher,
+                        name: teacher.name || '',
+                        contactNo: teacher.contactNo || '',
+                        dob: teacher.dob || '',
+                        doa: teacher.doa || '',
+                        subject: teacher.subject || '',
+                        email: teacher.email || ''
+                    })),
+                    pgtTeachers: pgtTeachers.map(teacher => ({
+                        ...teacher,
+                        name: teacher.name || '',
+                        contactNo: teacher.contactNo || '',
+                        dob: teacher.dob || '',
+                        doa: teacher.doa || '',
+                        subject: teacher.subject || '',
+                        email: teacher.email || ''
+                    })),
                     strengths,
                     selectedBoard,
                     selectedRegion,
@@ -194,21 +211,23 @@ const DataForm = () => {
                         topicCovered,
                         visitRemark,
                     },
-                    documentUrls: uploadedFileURLs, // Add uploaded file URLs
+                    documentUrls: uploadedFileURLs,
                 };
-
+    
                 // Save to Firestore
                 await setDoc(doc(firestore, `users/${user.uid}/dataForms/${dataFormId}`), dataToSave);
-
+    
                 // Success notification
                 Swal.fire({
                     position: 'top-end',
                     icon: 'success',
                     title: 'Form submitted successfully!',
+                    toast: true,
+                    timerProgressBar: true,
                     showConfirmButton: false,
                     timer: 1500
                 });
-
+    
                 // Clear form fields
                 setGraduationTeachers([{ id: Date.now() }]);
                 setPgtTeachers([{ id: Date.now() }]);
@@ -219,7 +238,22 @@ const DataForm = () => {
                 setNoOfStudents('');
                 setTopicCovered('');
                 setVisitRemark('');
+               setStrengths({
+    pcm: { in12: '', coaching: '' },
+    pcb: { in12: '', coaching: '' },
+    commerce: { in12: '', coaching: '' },
+    humanities: { in12: '', coaching: '' },
+    other: { in12: '', coaching: '' },
+});
+                setPrincipalName('');
+                setPrincipalContactNo('');
+                setPrincipalDob('');
+                setPrincipalDoa('');
+                setPrincipalEmail('');
+                setSelectedBoard('');
+                setSelectedRegion('');
 
+    
             } catch (error) {
                 console.error('Error submitting form:', error);
                 // Error notification
@@ -227,9 +261,13 @@ const DataForm = () => {
                     position: 'top-end',
                     icon: 'error',
                     title: 'An error occurred while submitting the form.',
+                    toast: true,
+                    timerProgressBar: true,
                     showConfirmButton: false,
                     timer: 1500
                 });
+            } finally {
+                setIsLoading(false); // Hide loader
             }
         } else {
             // Error notification
@@ -237,18 +275,23 @@ const DataForm = () => {
                 position: 'top-end',
                 icon: 'error',
                 title: 'Please fix the errors in the form.',
+                toast: true,
+                timerProgressBar: true,
                 showConfirmButton: false,
                 timer: 1500
             });
         }
     };
 
-
-
-
     return (
         <Box sx={{ padding: 4, background: 'linear-gradient(to right, #f0f0e8, #e8e0d8)', minHeight: '100vh', color: '#333' }}>
             <ToastContainer autoClose={5000} />
+            {isLoading && (
+                <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                    <CircularProgress />
+                </div>
+            )}
+
 
             {/* User Information Section */}
             <Paper elevation={3} sx={{ padding: 4, borderRadius: 4, mt: 3, background: '#fff', color: '#333' }}>
@@ -535,17 +578,67 @@ const DataForm = () => {
                                 helperText={errors[`graduationContactNo-${index}`]}
                             />
                         </Grid>
+                       
                         <Grid item xs={12} sm={6} md={3}>
-                            <TextField fullWidth label="DOB" type="date" variant="outlined" InputLabelProps={{ shrink: true }} color="primary" />
+                            <TextField
+                                fullWidth
+                                label="DOB"
+                                type="date"
+                                variant="outlined"
+                                InputLabelProps={{ shrink: true }}
+                                color="primary"
+                                value={teacher.dob}
+                                onChange={(e) => {
+                                    const newTeachers = [...graduationTeachers];
+                                    newTeachers[index].dob = e.target.value;
+                                    setGraduationTeachers(newTeachers);
+                                }}
+                            />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
-                            <TextField fullWidth label="DOA" type="date" variant="outlined" InputLabelProps={{ shrink: true }} color="primary" />
+                            <TextField
+                                fullWidth
+                                label="DOA"
+                                type="date"
+                                variant="outlined"
+                                InputLabelProps={{ shrink: true }}
+                                color="primary"
+                                value={teacher.doa}
+                                onChange={(e) => {
+                                    const newTeachers = [...graduationTeachers];
+                                    newTeachers[index].doa = e.target.value;
+                                    setGraduationTeachers(newTeachers);
+                                }}
+                            />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
-                            <TextField fullWidth label="Subject" variant="outlined" color="primary" />
+                            <TextField
+                                fullWidth
+                                label="Subject"
+                                variant="outlined"
+                                color="primary"
+                                value={teacher.subject}
+                                onChange={(e) => {
+                                    const newTeachers = [...graduationTeachers];
+                                    newTeachers[index].subject = e.target.value;
+                                    setGraduationTeachers(newTeachers);
+                                }}
+                            />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
-                            <TextField fullWidth label="Email" type="email" variant="outlined" color="primary" />
+                            <TextField
+                                fullWidth
+                                label="Email"
+                                type="email"
+                                variant="outlined"
+                                color="primary"
+                                value={teacher.email}
+                                onChange={(e) => {
+                                    const newTeachers = [...graduationTeachers];
+                                    newTeachers[index].email = e.target.value;
+                                    setGraduationTeachers(newTeachers);
+                                }}
+                            />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
                             <IconButton color="primary" onClick={handleAddGraduationTeacher}><AddCircle /></IconButton>
@@ -564,6 +657,7 @@ const DataForm = () => {
                 <Typography variant="h5" sx={{ mb: 2, color: '#ff8c00' }}>PGT Teacher Information</Typography>
                 {pgtTeachers.map((teacher, index) => (
                     <Grid container spacing={3} key={teacher.id} sx={{ mt: 1 }}>
+                        
                         <Grid item xs={12} sm={6} md={3}>
                             <TextField
                                 fullWidth
@@ -576,8 +670,6 @@ const DataForm = () => {
                                     newTeachers[index].name = e.target.value;
                                     setPgtTeachers(newTeachers);
                                 }}
-                                error={Boolean(errors[`pgtName-${index}`])}
-                                helperText={errors[`pgtName-${index}`]}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
@@ -588,30 +680,72 @@ const DataForm = () => {
                                 color="primary"
                                 value={teacher.contactNo || ''}
                                 onChange={(e) => {
-                                    const numericValue = e.target.value.replace(/[^0-9]/g, '');
                                     const newTeachers = [...pgtTeachers];
-                                    newTeachers[index].contactNo = numericValue;
+                                    newTeachers[index].contactNo = e.target.value.replace(/[^0-9]/g, ''); // Ensure numeric input
                                     setPgtTeachers(newTeachers);
                                 }}
-                                inputProps={{
-                                    inputMode: 'numeric',
-                                    pattern: '[0-9]*',
-                                }}
-                                error={Boolean(errors[`pgtContactNo-${index}`])}
-                                helperText={errors[`pgtContactNo-${index}`]}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
-                            <TextField fullWidth label="DOB" type="date" variant="outlined" InputLabelProps={{ shrink: true }} color="primary" />
+                            <TextField
+                                fullWidth
+                                label="DOB"
+                                type="date"
+                                variant="outlined"
+                                InputLabelProps={{ shrink: true }}
+                                color="primary"
+                                value={teacher.dob}
+                                onChange={(e) => {
+                                    const newTeachers = [...pgtTeachers];
+                                    newTeachers[index].dob = e.target.value;
+                                    setPgtTeachers(newTeachers);
+                                }}
+                            />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
-                            <TextField fullWidth label="DOA" type="date" variant="outlined" InputLabelProps={{ shrink: true }} color="primary" />
+                            <TextField
+                                fullWidth
+                                label="DOA"
+                                type="date"
+                                variant="outlined"
+                                InputLabelProps={{ shrink: true }}
+                                color="primary"
+                                value={teacher.doa}
+                                onChange={(e) => {
+                                    const newTeachers = [...pgtTeachers];
+                                    newTeachers[index].doa = e.target.value;
+                                    setPgtTeachers(newTeachers);
+                                }}
+                            />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
-                            <TextField fullWidth label="Subject" variant="outlined" color="primary" />
+                            <TextField
+                                fullWidth
+                                label="Subject"
+                                variant="outlined"
+                                color="primary"
+                                value={teacher.subject}
+                                onChange={(e) => {
+                                    const newTeachers = [...pgtTeachers];
+                                    newTeachers[index].subject = e.target.value;
+                                    setPgtTeachers(newTeachers);
+                                }}
+                            />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
-                            <TextField fullWidth label="Email" type="email" variant="outlined" color="primary" />
+                            <TextField
+                                fullWidth
+                                label="Email"
+                                type="email"
+                                variant="outlined"
+                                color="primary"
+                                value={teacher.email}
+                                onChange={(e) => {
+                                    const newTeachers = [...pgtTeachers];
+                                    newTeachers[index].email = e.target.value;
+                                    setPgtTeachers(newTeachers);
+                                }}
+                            />
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
                             <IconButton color="primary" onClick={handleAddPgtTeacher}><AddCircle /></IconButton>

@@ -1,196 +1,215 @@
-import React, { useEffect, useState } from 'react';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth, firestore } from '../../utils/firebaseConfig'; // Import Firebase utils
-import { Paper, Typography, Grid, Box, Button, Table, TableHead, TableBody, TableRow, TableCell, Collapse } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { collection, getDocs } from "firebase/firestore";
+import { getAuth } from 'firebase/auth';
+import { firestore } from '../../utils/firebaseConfig';
+import { CircularProgress, Dialog, DialogTitle, DialogContent, Typography, Card, CardContent, Grid, Divider, Paper, Button, Tab, Tabs, Box } from '@mui/material';
+import Swal from 'sweetalert2';
 
-const ViewSubmissions = () => {
-  const [user, loading, error] = useAuthState(auth); // Get authenticated user
-  const [formList, setFormList] = useState([]); // Store list of data forms
-  const [selectedFormId, setSelectedFormId] = useState(null); // Store selected form ID
-  const [selectedFormData, setSelectedFormData] = useState(null); // Store the detailed data of the selected form
-  const [openDetails, setOpenDetails] = useState(false); // Toggle details view
+const FetchAllDetailsPage = () => {
+    const [isLoading, setIsLoading] = useState(false);
+    const [dataForms, setDataForms] = useState([]);
+    const [selectedForm, setSelectedForm] = useState(null); // For handling popup details
+    const [tabIndex, setTabIndex] = useState(0); // For tabs
+    const auth = getAuth();
+    const userId = auth.currentUser?.uid;
 
-  // Fetch all forms for the authenticated user
-  useEffect(() => {
-    const fetchForms = async () => {
-      if (!user) return; // If user is not authenticated, don't proceed
+    useEffect(() => {
+        const fetchAllDetails = async () => {
+            if (!userId) {
+                Swal.fire({
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'User not logged in.',
+                    toast: true,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+                return;
+            }
 
-      try {
-        const formsRef = collection(firestore, `users/${user.uid}/dataForms`);
-        const snapshot = await getDocs(formsRef);
+            setIsLoading(true);
 
-        if (snapshot.empty) {
-          console.log('No data forms found');
-        } else {
-          const forms = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-          setFormList(forms); // Set the form list to state
-        }
-      } catch (err) {
-        console.error('Error fetching forms:', err);
-      }
+            try {
+                const dataFormsCollectionRef = collection(firestore, `users/${userId}/dataForms`);
+                const querySnapshot = await getDocs(dataFormsCollectionRef);
+
+                if (!querySnapshot.empty) {
+                    const allDataForms = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data(),
+                    }));
+                    setDataForms(allDataForms);
+                } else {
+                    Swal.fire({
+                        position: 'top-end',
+                        icon: 'info',
+                        title: 'No data forms found.',
+                        toast: true,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching data forms:", error);
+                Swal.fire({
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'An error occurred while fetching data forms.',
+                    toast: true,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAllDetails();
+    }, [userId]);
+
+    const handleCardClick = (form) => {
+        setSelectedForm(form);
     };
 
-    fetchForms();
-  }, [user]);
+    const handleCloseModal = () => {
+        setSelectedForm(null);
+        setTabIndex(0);
+    };
 
-  // Fetch data for the selected form
-  const handleRowClick = async (formId) => {
-    setSelectedFormId(formId);
-    const docRef = doc(firestore, `users/${user.uid}/dataForms`, formId);
-    const docSnap = await getDoc(docRef);
+    const handleTabChange = (_, newValue) => {
+        setTabIndex(newValue);
+    };
 
-    if (docSnap.exists()) {
-      setSelectedFormData(docSnap.data()); // Set the data to state
-      setOpenDetails(true); // Open the details section
-    } else {
-      console.log('No such document!');
+    if (isLoading) {
+        return (
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                <CircularProgress />
+            </div>
+        );
     }
-  };
 
-  // If still loading or if there's an error, show loading or error message
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+    return (
+        <div style={{ padding: '20px' }}>
+            <Typography variant="h4" style={{ marginBottom: '20px' }}>All Data Forms</Typography>
+            <Grid container spacing={3}>
+                {dataForms.length > 0 ? (
+                    dataForms.map((form, index) => (
+                        <Grid item xs={12} sm={6} md={4} key={form.id}>
+                            <Card style={{ cursor: 'pointer', borderRadius: '8px' }} onClick={() => handleCardClick(form)}>
+                                <CardContent>
+                                    <Typography variant="h6" style={{ marginBottom: '10px' }}>Form {index + 1}</Typography>
+                                    <Typography variant="body1"><strong>School Name:</strong> {form.schoolDetails?.schoolName}</Typography>
+                                    <Typography variant="body2"><strong>Principal:</strong> {form.principalInfo?.name}</Typography>
+                                    <Typography variant="body2"><strong>Date:</strong> {form.schoolDetails?.date}</Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    ))
+                ) : (
+                    <Typography variant="body1">No data forms available.</Typography>
+                )}
+            </Grid>
 
-  // If no forms, show a message
-  if (formList.length === 0) {
-    return <div>No submission forms found</div>;
-  }
+            {/* Modal for detailed view */}
+            <Dialog open={!!selectedForm} onClose={handleCloseModal} maxWidth="md" fullWidth>
+                <DialogTitle>Form Details</DialogTitle>
+                <DialogContent>
+                    {selectedForm && (
+                        <Box>
+                            <Tabs value={tabIndex} onChange={handleTabChange} centered>
+                                <Tab label="School Info" />
+                                <Tab label="Principal Info" />
+                                <Tab label="Teachers Info" />
+                                <Tab label="Strengths" />
+                                <Tab label="Documents" />
+                            </Tabs>
 
-  // Render the submission forms in a table
-  return (
-    <Paper elevation={3} sx={{ padding: 4, borderRadius: 4, mt: 3 }}>
-      <Typography variant="h5" sx={{ mb: 2, color: '#ff8c00' }}>Submitted Data Forms</Typography>
+                            {/* Tab Content */}
+                            <Box style={{ marginTop: '20px' }}>
+                                {tabIndex === 0 && (
+                                    <Paper style={{ padding: '16px' }}>
+                                        <Typography variant="h6">School Info</Typography>
+                                        <Divider style={{ marginBottom: '10px' }} />
+                                        <p><strong>School Name:</strong> {selectedForm.schoolDetails?.schoolName}</p>
+                                        <p><strong>School Address:</strong> {selectedForm.schoolDetails?.schoolAddress}</p>
+                                        <p><strong>Region:</strong> {selectedForm.selectedRegion}</p>
+                                        <p><strong>Board:</strong> {selectedForm.selectedBoard}</p>
+                                        <p><strong>Date:</strong> {selectedForm.schoolDetails?.date}</p>
+                                        <p><strong>No. of Students:</strong> {selectedForm.schoolDetails?.noOfStudents}</p>
+                                        <p><strong>Topic Covered:</strong> {selectedForm.schoolDetails?.topicCovered}</p>
+                                        <p><strong>Visit Remark:</strong> {selectedForm.schoolDetails?.visitRemark}</p>
+                                    </Paper>
+                                )}
 
-      <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
-        {formList.map((form) => (
-          <Box
-            key={form.id}
-            sx={{
-              padding: 2,
-              borderBottom: '1px solid #ddd',
-              cursor: 'pointer',
-            }}
-            onClick={() => handleRowClick(form.id)}
-          >
-            <Typography variant="h6">{form.schoolName}</Typography>
-            <Typography variant="body2">View {form.facultyName}</Typography>
-          </Box>
-        ))}
-      </Box>
+                                {tabIndex === 1 && (
+                                    <Paper style={{ padding: '16px' }}>
+                                        <Typography variant="h6">Principal Info</Typography>
+                                        <Divider style={{ marginBottom: '10px' }} />
+                                        <p><strong>Name:</strong> {selectedForm.principalInfo?.name}</p>
+                                        <p><strong>Contact No:</strong> {selectedForm.principalInfo?.contactNo}</p>
+                                        <p><strong>DOB:</strong> {selectedForm.principalInfo?.dob}</p>
+                                        <p><strong>DOA:</strong> {selectedForm.principalInfo?.doa}</p>
+                                        <p><strong>Email:</strong> {selectedForm.principalInfo?.email}</p>
+                                    </Paper>
+                                )}
 
-      {/* Display detailed information for selected form */}
-      <Collapse in={openDetails}>
-        <Box mt={2}>
-          {selectedFormData && (
-            <Paper elevation={3} sx={{ padding: 4, borderRadius: 4, mt: 2 }}>
-              <Typography variant="h6" sx={{ color: '#ff8c00' }}>Form Details</Typography>
+                                {tabIndex === 2 && (
+                                    <Paper style={{ padding: '16px' }}>
+                                        <Typography variant="h6">Teachers Info</Typography>
+                                        <Divider style={{ marginBottom: '10px' }} />
+                                        <Typography variant="subtitle1">Graduation Teachers</Typography>
+                                        {selectedForm.graduationTeachers?.map((teacher, index) => (
+                                            <p key={teacher.id}>
+                                                <strong>{index + 1}:</strong> {teacher.name}, {teacher.contactNo}
+                                            </p>
+                                        ))}
+                                        <Typography variant="subtitle1" style={{ marginTop: '10px' }}>PGT Teachers</Typography>
+                                        {selectedForm.pgtTeachers?.map((teacher, index) => (
+                                            <p key={teacher.id}>
+                                                <strong>{index + 1}:</strong> {teacher.name}, {teacher.contactNo}
+                                            </p>
+                                        ))}
+                                    </Paper>
+                                )}
 
-              {/* Table to display the details */}
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell><strong>Field</strong></TableCell>
-                    <TableCell><strong>Value</strong></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {/* School Details */}
-                  <TableRow>
-                    <TableCell>School Name</TableCell>
-                    <TableCell>{selectedFormData.schoolDetails.schoolName || 'N/A'}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Department</TableCell>
-                    <TableCell>{selectedFormData.schoolDetails.department || 'N/A'}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Date</TableCell>
-                    <TableCell>{selectedFormData.schoolDetails.date || 'N/A'}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Topic Covered</TableCell>
-                    <TableCell>{selectedFormData.schoolDetails.topicCovered || 'N/A'}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Visit Remark</TableCell>
-                    <TableCell>{selectedFormData.schoolDetails.visitRemark || 'N/A'}</TableCell>
-                  </TableRow>
+                                {tabIndex === 3 && (
+                                    <Paper style={{ padding: '16px' }}>
+                                        <Typography variant="h6">Strengths</Typography>
+                                        <Divider style={{ marginBottom: '10px' }} />
+                                        <Typography variant="subtitle1">In 12th</Typography>
+                                        <p><strong>Commerce:</strong> {selectedForm.strengths?.commerce?.in12 || 'N/A'}</p>
+                                        <p><strong>PCM:</strong> {selectedForm.strengths?.pcm?.in12 || 'N/A'}</p>
+                                        <p><strong>PCB:</strong> {selectedForm.strengths?.pcb?.in12 || 'N/A'}</p>
 
-                  {/* Document URLs */}
-                  {selectedFormData.documentUrls && selectedFormData.documentUrls.length > 0 ? (
-                    <TableRow>
-                      <TableCell>Documents</TableCell>
-                      <TableCell>
-                        {selectedFormData.documentUrls.map((url, index) => (
-                          <a href={url} target="_blank" rel="noopener noreferrer" key={index}>
-                            Document {index + 1}
-                          </a>
-                        ))}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    <TableRow>
-                      <TableCell>No Documents</TableCell>
-                      <TableCell>N/A</TableCell>
-                    </TableRow>
-                  )}
+                                        <Typography variant="subtitle1" style={{ marginTop: '10px' }}>Coaching</Typography>
+                                        <p><strong>Commerce:</strong> {selectedForm.strengths?.commerce?.coaching || 'N/A'}</p>
+                                        <p><strong>PCM:</strong> {selectedForm.strengths?.pcm?.coaching || 'N/A'}</p>
+                                        <p><strong>PCB:</strong> {selectedForm.strengths?.pcb?.coaching || 'N/A'}</p>
+                                    </Paper>
+                                )}
 
-                  {/* Graduation Teachers */}
-                  {selectedFormData.graduationTeachers && selectedFormData.graduationTeachers.length > 0 ? (
-                    <TableRow>
-                      <TableCell>Graduation Teachers</TableCell>
-                      <TableCell>
-                        {selectedFormData.graduationTeachers.map((teacher, index) => (
-                          <div key={index}>
-                            {teacher.name} ({teacher.contactNo})
-                          </div>
-                        ))}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    <TableRow>
-                      <TableCell>No Graduation Teachers</TableCell>
-                      <TableCell>N/A</TableCell>
-                    </TableRow>
-                  )}
-
-                  {/* Principal Information */}
-                  {selectedFormData.principalInfo && (
-                    <TableRow>
-                      <TableCell>Principal</TableCell>
-                      <TableCell>
-                        {selectedFormData.principalInfo.name || 'N/A'} <br />
-                        Contact: {selectedFormData.principalInfo.contactNo || 'N/A'} <br />
-                        Email: {selectedFormData.principalInfo.email || 'N/A'}
-                      </TableCell>
-                    </TableRow>
-                  )}
-
-                  {/* School Strengths */}
-                  {selectedFormData.strengths && (
-                    <TableRow>
-                      <TableCell>Strengths</TableCell>
-                      <TableCell>
-                        {Object.entries(selectedFormData.strengths).map(([key, value]) => (
-                          <div key={key}>
-                            {key}: {value.coaching || 'N/A'} - {value.in12 || 'N/A'}
-                          </div>
-                        ))}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </Paper>
-          )}
-        </Box>
-      </Collapse>
-    </Paper>
-  );
+                                {tabIndex === 4 && (
+                                    <Paper style={{ padding: '16px' }}>
+                                        <Typography variant="h6">Documents</Typography>
+                                        <Divider style={{ marginBottom: '10px' }} />
+                                        {selectedForm.documentUrls?.map((url, i) => (
+                                            <p key={i}>
+                                                <a href={url} target="_blank" rel="noopener noreferrer">View Document {i + 1}</a>
+                                            </p>
+                                        ))}
+                                    </Paper>
+                                )}
+                            </Box>
+                        </Box>
+                    )}
+                </DialogContent>
+                <Button onClick={handleCloseModal} color="primary">Close</Button>
+            </Dialog>
+        </div>
+    );
 };
 
-export default ViewSubmissions;
+export default FetchAllDetailsPage;
