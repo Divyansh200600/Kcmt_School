@@ -8,7 +8,7 @@ export default function AddSchool() {
   const [loading, setLoading] = useState(false); // Loading state for upload
   const [uploadedData, setUploadedData] = useState({}); // Store data for each board
   const [selectedBoard, setSelectedBoard] = useState(null); // Track selected board
-  const [boardCounts, setBoardCounts] = useState({}); // Store counts of schools per board
+  const [boardCounts, setBoardCounts] = useState({}); 
 
   // Fetch data from Firestore
   const fetchData = async () => {
