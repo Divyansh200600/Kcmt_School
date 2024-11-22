@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs } from "firebase/firestore";
 import { getAuth } from 'firebase/auth';
 import { firestore } from '../../utils/firebaseConfig';
-import { CircularProgress, Dialog, DialogTitle, DialogContent, Typography, Card, CardContent, Grid, Divider, Paper, Button, Tab, Tabs, Box } from '@mui/material';
+import { CircularProgress, Dialog, DialogTitle, DialogContent, Typography, Card, CardContent, Grid, Divider, Paper, Button, Tab, Tabs, Box, List, ListItem, ListItemText } from '@mui/material';
 import Swal from 'sweetalert2';
+import { ArrowForward, School, Person, Group, Layers, Description } from '@mui/icons-material'; // Modern icons
 
-const FetchAllDetailsPage = () => {
+const ViewDataForm = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [dataForms, setDataForms] = useState([]);
     const [selectedForm, setSelectedForm] = useState(null); // For handling popup details
@@ -92,15 +93,25 @@ const FetchAllDetailsPage = () => {
     }
 
     return (
-        <div style={{ padding: '20px' }}>
-            <Typography variant="h4" style={{ marginBottom: '20px' }}>All Data Forms</Typography>
+        <div style={{ padding: '40px', backgroundColor: '#f4f4f4', minHeight: '100vh' }}>
+            <Typography variant="h4" style={{ marginBottom: '20px', fontWeight: 'bold', color: '#333' }}>All Data Forms</Typography>
             <Grid container spacing={3}>
                 {dataForms.length > 0 ? (
                     dataForms.map((form, index) => (
                         <Grid item xs={12} sm={6} md={4} key={form.id}>
-                            <Card style={{ cursor: 'pointer', borderRadius: '8px' }} onClick={() => handleCardClick(form)}>
+                            <Card
+                                style={{
+                                    cursor: 'pointer',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
+                                    transition: 'transform 0.3s ease',
+                                }}
+                                onClick={() => handleCardClick(form)}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            >
                                 <CardContent>
-                                    <Typography variant="h6" style={{ marginBottom: '10px' }}>Form {index + 1}</Typography>
+                                    <Typography variant="h6" style={{ marginBottom: '10px', color: '#1976d2' }}>Form {index + 1}</Typography>
                                     <Typography variant="body1"><strong>School Name:</strong> {form.schoolDetails?.schoolName}</Typography>
                                     <Typography variant="body2"><strong>Principal:</strong> {form.principalInfo?.name}</Typography>
                                     <Typography variant="body2"><strong>Date:</strong> {form.schoolDetails?.date}</Typography>
@@ -115,22 +126,22 @@ const FetchAllDetailsPage = () => {
 
             {/* Modal for detailed view */}
             <Dialog open={!!selectedForm} onClose={handleCloseModal} maxWidth="md" fullWidth>
-                <DialogTitle>Form Details</DialogTitle>
-                <DialogContent>
+                <DialogTitle style={{ backgroundColor: '#1976d2', color: 'white' }}>Form Details</DialogTitle>
+                <DialogContent style={{ backgroundColor: '#f5f5f5' }}>
                     {selectedForm && (
                         <Box>
                             <Tabs value={tabIndex} onChange={handleTabChange} centered>
-                                <Tab label="School Info" />
-                                <Tab label="Principal Info" />
-                                <Tab label="Teachers Info" />
-                                <Tab label="Strengths" />
-                                <Tab label="Documents" />
+                                <Tab label="School Info" icon={<School />} />
+                                <Tab label="Principal Info" icon={<Person />} />
+                                <Tab label="Teachers Info" icon={<Group />} />
+                                <Tab label="Strengths" icon={<Layers />} />
+                                <Tab label="Documents" icon={<Description />} />
                             </Tabs>
 
                             {/* Tab Content */}
                             <Box style={{ marginTop: '20px' }}>
                                 {tabIndex === 0 && (
-                                    <Paper style={{ padding: '16px' }}>
+                                    <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
                                         <Typography variant="h6">School Info</Typography>
                                         <Divider style={{ marginBottom: '10px' }} />
                                         <p><strong>School Name:</strong> {selectedForm.schoolDetails?.schoolName}</p>
@@ -145,7 +156,7 @@ const FetchAllDetailsPage = () => {
                                 )}
 
                                 {tabIndex === 1 && (
-                                    <Paper style={{ padding: '16px' }}>
+                                    <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
                                         <Typography variant="h6">Principal Info</Typography>
                                         <Divider style={{ marginBottom: '10px' }} />
                                         <p><strong>Name:</strong> {selectedForm.principalInfo?.name}</p>
@@ -157,26 +168,37 @@ const FetchAllDetailsPage = () => {
                                 )}
 
                                 {tabIndex === 2 && (
-                                    <Paper style={{ padding: '16px' }}>
+                                    <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
                                         <Typography variant="h6">Teachers Info</Typography>
                                         <Divider style={{ marginBottom: '10px' }} />
                                         <Typography variant="subtitle1">Graduation Teachers</Typography>
-                                        {selectedForm.graduationTeachers?.map((teacher, index) => (
-                                            <p key={teacher.id}>
-                                                <strong>{index + 1}:</strong> {teacher.name}, {teacher.contactNo}
-                                            </p>
-                                        ))}
-                                        <Typography variant="subtitle1" style={{ marginTop: '10px' }}>PGT Teachers</Typography>
-                                        {selectedForm.pgtTeachers?.map((teacher, index) => (
-                                            <p key={teacher.id}>
-                                                <strong>{index + 1}:</strong> {teacher.name}, {teacher.contactNo}
-                                            </p>
-                                        ))}
+                                        <List>
+                                            {selectedForm.graduationTeachers?.map((teacher, index) => (
+                                                <ListItem key={teacher.id}>
+                                                    <ListItemText
+                                                        primary={<strong>{teacher.name}</strong>}
+                                                        secondary={`${teacher.subject} - ${teacher.contactNo} - DOB: ${teacher.dob} - DOA: ${teacher.doa} - Email: ${teacher.email}`}
+                                                    />
+                                                </ListItem>
+                                            ))}
+                                        </List>
+
+                                        <Typography variant="subtitle1" style={{ marginTop: '20px' }}>PGT Teachers</Typography>
+                                        <List>
+                                            {selectedForm.pgtTeachers?.map((teacher, index) => (
+                                                <ListItem key={teacher.id}>
+                                                    <ListItemText
+                                                        primary={<strong>{teacher.name}</strong>}
+                                                        secondary={`${teacher.subject} - ${teacher.contactNo} - DOB: ${teacher.dob} - DOA: ${teacher.doa} - Email: ${teacher.email}`}
+                                                    />
+                                                </ListItem>
+                                            ))}
+                                        </List>
                                     </Paper>
                                 )}
 
                                 {tabIndex === 3 && (
-                                    <Paper style={{ padding: '16px' }}>
+                                    <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
                                         <Typography variant="h6">Strengths</Typography>
                                         <Divider style={{ marginBottom: '10px' }} />
                                         <Typography variant="subtitle1">In 12th</Typography>
@@ -192,24 +214,28 @@ const FetchAllDetailsPage = () => {
                                 )}
 
                                 {tabIndex === 4 && (
-                                    <Paper style={{ padding: '16px' }}>
+                                    <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
                                         <Typography variant="h6">Documents</Typography>
                                         <Divider style={{ marginBottom: '10px' }} />
-                                        {selectedForm.documentUrls?.map((url, i) => (
-                                            <p key={i}>
-                                                <a href={url} target="_blank" rel="noopener noreferrer">View Document {i + 1}</a>
-                                            </p>
-                                        ))}
+                                        <List>
+                                            {selectedForm.documentUrls?.map((url, i) => (
+                                                <ListItem key={i}>
+                                                    <ListItemText
+                                                        primary={<a href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: '#1976d2' }}>View Document {i + 1}</a>}
+                                                    />
+                                                </ListItem>
+                                            ))}
+                                        </List>
                                     </Paper>
                                 )}
                             </Box>
                         </Box>
                     )}
                 </DialogContent>
-                <Button onClick={handleCloseModal} color="primary">Close</Button>
+                <Button onClick={handleCloseModal} color="primary" variant="contained" style={{ margin: '10px', backgroundColor: '#1976d2', color: 'white' }}>Close</Button>
             </Dialog>
         </div>
     );
 };
 
-export default FetchAllDetailsPage;
+export default ViewDataForm;
