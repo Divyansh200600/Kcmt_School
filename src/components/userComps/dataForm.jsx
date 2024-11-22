@@ -160,18 +160,18 @@ const DataForm = () => {
         if (validateForm()) {
             setIsLoading(true); // Show loader
             const dataFormId = `DF-${Date.now()}`; // Generate unique dataFormId
-    
+
             // Upload files to storage and get URLs
             const uploadFiles = async (file) => {
                 const fileRef = ref(storage, `users/${user.uid}/dataForms/${dataFormId}/${file.name}`);
                 await uploadBytes(fileRef, file);
                 return await getDownloadURL(fileRef);
             };
-    
+
             try {
                 // Map file URLs
                 const uploadedFileURLs = await Promise.all(files.map(file => uploadFiles(file)));
-    
+
                 // Prepare data for Firestore including the new fields
                 const dataToSave = {
                     userDetails,
@@ -213,10 +213,10 @@ const DataForm = () => {
                     },
                     documentUrls: uploadedFileURLs,
                 };
-    
+
                 // Save to Firestore
                 await setDoc(doc(firestore, `users/${user.uid}/dataForms/${dataFormId}`), dataToSave);
-    
+
                 // Success notification
                 Swal.fire({
                     position: 'top-end',
@@ -227,7 +227,7 @@ const DataForm = () => {
                     showConfirmButton: false,
                     timer: 1500
                 });
-    
+
                 // Clear form fields
                 setGraduationTeachers([{ id: Date.now() }]);
                 setPgtTeachers([{ id: Date.now() }]);
@@ -238,13 +238,13 @@ const DataForm = () => {
                 setNoOfStudents('');
                 setTopicCovered('');
                 setVisitRemark('');
-               setStrengths({
-    pcm: { in12: '', coaching: '' },
-    pcb: { in12: '', coaching: '' },
-    commerce: { in12: '', coaching: '' },
-    humanities: { in12: '', coaching: '' },
-    other: { in12: '', coaching: '' },
-});
+                setStrengths({
+                    pcm: { in12: '', coaching: '' },
+                    pcb: { in12: '', coaching: '' },
+                    commerce: { in12: '', coaching: '' },
+                    humanities: { in12: '', coaching: '' },
+                    other: { in12: '', coaching: '' },
+                });
                 setPrincipalName('');
                 setPrincipalContactNo('');
                 setPrincipalDob('');
@@ -253,7 +253,7 @@ const DataForm = () => {
                 setSelectedBoard('');
                 setSelectedRegion('');
 
-    
+
             } catch (error) {
                 console.error('Error submitting form:', error);
                 // Error notification
@@ -578,7 +578,7 @@ const DataForm = () => {
                                 helperText={errors[`graduationContactNo-${index}`]}
                             />
                         </Grid>
-                       
+
                         <Grid item xs={12} sm={6} md={3}>
                             <TextField
                                 fullWidth
@@ -657,7 +657,7 @@ const DataForm = () => {
                 <Typography variant="h5" sx={{ mb: 2, color: '#ff8c00' }}>PGT Teacher Information</Typography>
                 {pgtTeachers.map((teacher, index) => (
                     <Grid container spacing={3} key={teacher.id} sx={{ mt: 1 }}>
-                        
+
                         <Grid item xs={12} sm={6} md={3}>
                             <TextField
                                 fullWidth
