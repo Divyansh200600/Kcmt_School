@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CircularProgress, Button, TextField, Select, MenuItem, FormControl, InputLabel, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from '@mui/material';
 import { Edit, Delete, AddCircle } from '@mui/icons-material';
 import Swal from 'sweetalert2';
-import { firestore } from '../../utils/firebaseConfig';
+import { firestore } from '../../../utils/firebaseConfig';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 const InstitutionMaster = () => {

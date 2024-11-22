@@ -8,7 +8,7 @@ const ProtectedRoute = ({ element: Component, allowedRoles, ...rest }) => {
   if (loading) return <div>Loading...</div>;
 
   // If user is not logged in, redirect to login
-  if (!user) return <Navigate to="/admin-login" />;
+  if (!user) return <Navigate to="/SIS-login" />;
 
   // If user's role is not allowed, redirect to their dashboard
   if (!allowedRoles.includes(role)) {

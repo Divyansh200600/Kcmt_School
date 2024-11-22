@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { FaSchool, FaBookOpen, FaUniversity, FaGraduationCap, FaChalkboardTeacher, FaDatabase, FaTelegram,FaEye } from "react-icons/fa";
+import { FaSchool, FaBookOpen, FaUniversity, FaGraduationCap, FaChalkboardTeacher, FaDatabase, FaTelegram,FaEye,FaLock } from "react-icons/fa";
 import { getDoc, doc } from "firebase/firestore";
 import { auth, firestore } from "../../utils/firebaseConfig";
 import DataForm from '../../components/userComps/dataForm';
 import ViewDataForm from "../../comp../../components/userComps/viewDataForm";
 import ICSE from "../../components/userComps/ICSE";
 import Reports from '../../components/userComps/reports';
+import Swal from 'sweetalert2'; 
+import { signOut } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState("dataForm");
   const [username, setUsername] = useState(""); 
   const [loading, setLoading] = useState(true); 
   const user = auth.currentUser; 
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -58,6 +62,52 @@ const UserDashboard = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      // Show a toast-style confirmation before logout
+      Swal.fire({
+        title: 'Logging out...',
+        text: 'You are being logged out.',
+        icon: 'info',
+        toast: true, // Enables toast notification
+        position: 'top-right', // Position the toast in the top-right corner
+        showConfirmButton: false, // No need for a confirm button
+        timer: 2000, // Duration for the toast (in ms)
+        timerProgressBar: true, // Show a progress bar for the timer
+      });
+  
+      // Sign out from Firebase Authentication
+      await signOut(auth);
+  
+      // Show a success toast after logging out
+      Swal.fire({
+        title: 'Successfully logged out!',
+        icon: 'success',
+        toast: true,
+        position: 'top-right',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true,
+      });
+  
+      // Navigate to the login page
+      navigate('/SIS-login');
+    } catch (error) {
+      console.error("Error logging out:", error);
+  
+      // Show an error toast if there's a problem
+      Swal.fire({
+        title: 'Error logging out!',
+        text: 'There was an issue with logging out.',
+        icon: 'error',
+        toast: true,
+        position: 'top-right',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true,
+      });
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-r from-green-100 via-blue-200 to-indigo-300 text-gray-800 flex flex-col md:flex-row">
       {/* Sidebar */}
@@ -123,6 +173,13 @@ const UserDashboard = () => {
             >
               <FaTelegram className="text-lg" />
               <span>Reports</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className={`flex items-center space-x-2 p-4 rounded-lg transition-all duration-200 ${activeTab === "" ? "bg-blue-300 text-white" : "hover:bg-blue-200"}`}
+            >
+              <FaLock className="text-lg" />
+              <span>Logout</span>
             </button>
           </div>
         </div>

@@ -2,25 +2,26 @@ import React, { useState } from 'react';
 import { Link,useNavigate } from 'react-router-dom';
 import { 
   Dashboard, Group, School, LocalLibrary, LocationOn, Person, SchoolRounded, 
-  LibraryBooks, SchoolOutlined, Domain, ExpandMore, ExpandLess 
+  LibraryBooks, SchoolOutlined, Stream, ExpandMore, ExpandLess ,LocationCity,SupervisedUserCircle
 } from '@mui/icons-material';
 import { Collapse } from '@mui/material';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../utils/firebaseConfig'; 
 
 // All Masters Import here ---->
-import Db from '../../components/adminComps/dashboard';
-import AddUser from '../../components/adminComps/addUser';
-import RoleMaster from '../../components/adminComps/roleMaster';
-import InstitutionMaster from '../../components/adminComps/institutionMaster';
-import LevelBoardMaster from '../../components/adminComps/levelBoardMaster';
-import DesignationMaster from '../../components/adminComps/designationMaster';
-import SessionsMaster from '../../components/adminComps/sessionMaster';
-import LocationMaster from '../../components/adminComps/locationMaster';
-import LocationSub from '../../components/adminComps/locationSub';
-import StreamMaster from '../../components/adminComps/streamMaster';
-import StaffMaster from '../../components/adminComps/staffMaster';
-import AddSchool from '../../components/adminComps/addSchool';
+import Db from '../../components/adminComps/Masters/dashboard';
+import AddUser from '../../components/adminComps/Masters/addUser';
+import RoleMaster from '../../components/adminComps/Masters/roleMaster';
+import InstitutionMaster from '../../components/adminComps/Masters/institutionMaster';
+import LevelBoardMaster from '../../components/adminComps/Masters/levelBoardMaster';
+import DesignationMaster from '../../components/adminComps/Masters/designationMaster';
+import SessionsMaster from '../../components/adminComps/Masters/sessionMaster';
+import LocationMaster from '../../components/adminComps/Masters/locationMaster';
+import LocationSub from '../../components/adminComps/Masters/locationSub';
+import StreamMaster from '../../components/adminComps/Masters/streamMaster';
+import StaffMaster from '../../components/adminComps/Masters/staffMaster';
+import AddSchool from '../../components/adminComps/Masters/addSchool';
+import ManageUsers from '../../components/adminComps/Masters/manageUser';
 import Swal from 'sweetalert2'; 
 // All Reports Imports Here ------>
 
@@ -166,6 +167,16 @@ const AdminDashboard = () => {
 
           <li
             className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+              activeMenu === 'manageUsers' ? 'bg-gray-700' : ''
+            }`}
+            onClick={() => handleMenuClick('manageUsers')}
+          >
+            <SupervisedUserCircle />
+            {sidebarOpen && <span className="font-medium">Manage Users</span>}
+          </li>
+
+          <li
+            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
               activeMenu === 'addSchool' ? 'bg-gray-700' : ''
             }`}
             onClick={() => handleMenuClick('addSchool')}
@@ -245,6 +256,34 @@ const AdminDashboard = () => {
                   <LocationOn />
                   {sidebarOpen && <span className="font-medium">Region Master</span>}
                 </li>
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'locationSubMaster' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('locationSubMaster')}
+                >
+                  <LocationCity />
+                  {sidebarOpen && <span className="font-medium">Region Sub Master</span>}
+                </li>
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'streamMaster' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('streamMaster')}
+                >
+                  <Stream />
+                  {sidebarOpen && <span className="font-medium">Stream Master</span>}
+                </li>
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
+                    activeMenu === 'staffMaster' ? 'bg-gray-700' : ''
+                  }`}
+                  onClick={() => handleMenuClick('staffMaster')}
+                >
+                  <SchoolOutlined />
+                  {sidebarOpen && <span className="font-medium">Staff Master</span>}
+                </li>
+                
               </ul>
             </Collapse>
           </li>
@@ -327,10 +366,11 @@ const AdminDashboard = () => {
           {activeMenu === 'designationMaster' && <DesignationMaster />}
           {activeMenu === 'sessionMaster' && <SessionsMaster />}
           {activeMenu === 'locationMaster' && <LocationMaster />}
-          {activeMenu === 'locationSub' && <LocationSub />}
-          {activeMenu === 'stream' && <StreamMaster />}
+          {activeMenu === 'locationSubMaster' && <LocationSub />}
+          {activeMenu === 'streamMaster' && <StreamMaster />}
           {activeMenu === 'staffMaster' && <StaffMaster />}
           {activeMenu === 'addSchool' && <AddSchool />}
+          {activeMenu === 'manageUsers' && <ManageUsers />}
           {activeMenu === 'report1' && <div><Reports/></div>}
           {activeMenu === 'report2' && <div><SchoolData/></div>}
           {activeMenu === 'report3' && <div>Report 3 content</div>}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getFirestore, collection, getDocs, query, where } from 'firebase/firestore';
-import { app } from '../../utils/firebaseConfig';
+import { app } from '../../../utils/firebaseConfig';
 
 const Dashboard = () => {
   const [totalUsers, setTotalUsers] = useState(0);  // Total user count

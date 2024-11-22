@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, firestore } from '../../utils/firebaseConfig';
+import { auth, firestore } from '../../../utils/firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { setDoc, doc, getDocs, collection, deleteDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2';

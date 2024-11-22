@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Box, Typography, Divider, FormControl, Select, MenuItem, InputLabel } from '@mui/material';
-import { firestore } from '../../utils/firebaseConfig';
+import { firestore } from '../../../utils/firebaseConfig';
 import { doc, getDoc, updateDoc, addDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
 import { AddCircle } from '@mui/icons-material';

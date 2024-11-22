@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { firestore } from '../../utils/firebaseConfig';
+import { firestore } from '../../../utils/firebaseConfig';
 import { collection, getDocs, query, addDoc, orderBy } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 

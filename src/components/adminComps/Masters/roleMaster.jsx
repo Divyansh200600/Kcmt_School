@@ -3,7 +3,7 @@ import { getDocs, collection, doc, updateDoc } from 'firebase/firestore';
 import { CircularProgress } from '@mui/material';
 import { Search } from '@mui/icons-material';
 import Swal from 'sweetalert2';
-import { firestore } from '../../utils/firebaseConfig';
+import { firestore } from '../../../utils/firebaseConfig';
 
 const RoleMaster = () => {
   const [users, setUsers] = useState([]);

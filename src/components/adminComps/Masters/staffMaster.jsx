@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { firestore } from '../../utils/firebaseConfig';
+import { firestore } from '../../../utils/firebaseConfig';
 import { addDoc, updateDoc, deleteDoc, doc, collection, getDocs } from 'firebase/firestore';
 import Swal from 'sweetalert2';
 import { CircularProgress, TextField, Button, IconButton, InputAdornment, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
