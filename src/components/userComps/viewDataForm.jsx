@@ -4,12 +4,12 @@ import { getAuth } from 'firebase/auth';
 import { firestore } from '../../utils/firebaseConfig';
 import { CircularProgress, Dialog, DialogTitle, DialogContent, Typography, Card, CardContent, Grid, Divider, Paper, Button, Tab, Tabs, Box, List, ListItem, ListItemText } from '@mui/material';
 import Swal from 'sweetalert2';
-import { ArrowForward, School, Person, Group, Layers, Description } from '@mui/icons-material'; // Modern icons
+import {  School, Person, Group, Layers, Description } from '@mui/icons-material'; 
 
 const ViewDataForm = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [dataForms, setDataForms] = useState([]);
-    const [selectedForm, setSelectedForm] = useState(null); // For handling popup details
+    const [selectedForm, setSelectedForm] = useState(null); 
     const [tabIndex, setTabIndex] = useState(0); // For tabs
     const auth = getAuth();
     const userId = auth.currentUser?.uid;

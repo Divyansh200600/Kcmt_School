@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { firestore } from "../../../utils/firebaseConfig";
 
 export default function ManageUser() {
-  
   const [users, setUsers] = useState([]);
   const [admins, setAdmins] = useState([]);
   const navigate = useNavigate();
@@ -43,14 +42,10 @@ export default function ManageUser() {
     fetchUsers();
   }, []);
 
-  // Navigate based on the clicked user's UID
   const handleView = (uid) => {
-    
-  
-    navigate(`/manage${uid}`);  
+    navigate(`/user-details/${uid}`);
   };
 
-  
   return (
     <div className="min-h-screen bg-gradient-to-r from-blue-50 to-indigo-100 p-8">
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Manage Users</h1>
@@ -73,7 +68,7 @@ export default function ManageUser() {
                   <td className="p-2 border border-gray-300">{user.department}</td>
                   <td className="p-2 border border-gray-300 text-center">
                     <button
-                      onClick={() => handleView(user.id)}  // Pass the user's UID here
+                      onClick={() => handleView(user.id)}
                       className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-200"
                     >
                       View
@@ -103,7 +98,7 @@ export default function ManageUser() {
                   <td className="p-2 border border-gray-300">{admin.department}</td>
                   <td className="p-2 border border-gray-300 text-center">
                     <button
-                      onClick={() => handleView(admin.id)}  // Pass the admin's UID here
+                      onClick={() => handleView(admin.id)} // Pass the admin's UID here
                       className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-200"
                     >
                       View

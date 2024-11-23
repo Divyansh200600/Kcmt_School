@@ -9,6 +9,8 @@ import AdminDashboard from './pages/adminPage/adminDashboard';
 import UserDashboard from './pages/userPage/userDb';
 import SubAdmin from './pages/subAdmin/subAdmin';
 
+import UserDetails from './components/adminComps/userDeatails';
+
 function App() {
   return (
     <Router>
@@ -16,7 +18,7 @@ function App() {
         <div className="App">
           <Routes>
             <Route path="/SIS-login" element={<AdminLogin />} />
-
+            <Route path="/user-details/:uid" element={<UserDetails />} />            
             {/* Protected Routes */}
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/user-dashboard" element={<ProtectedRoute element={UserDashboard} allowedRoles={['user']} />} />
