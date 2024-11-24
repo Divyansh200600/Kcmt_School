@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { firestore } from "../../utils/firebaseConfig";
+import { firestore } from "../../../utils/firebaseConfig";
 
 export default function Reports() {
   const [locations, setLocations] = useState([]); // List of locations

@@ -25,7 +25,7 @@ import ManageUsers from '../../components/adminComps/Masters/manageUser';
 import Swal from 'sweetalert2'; 
 // All Reports Imports Here ------>
 
-import Reports from '../../components/userComps/reports';
+import Reports from '../../components/adminComps/Reports/schoolInfoReport';
 import SchoolData from '../../components/adminComps/Reports/schoolData';
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true); // Default open sidebar

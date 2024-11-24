@@ -11,7 +11,7 @@ import {
   List,
   ListItem,
   ListItemText,
- 
+
   Typography,
   Card,
   CardContent,
@@ -26,6 +26,8 @@ import { FaFilePdf } from "react-icons/fa";
 import { jsPDF } from "jspdf";
 import { School, Person, Group, Layers, Description } from "@mui/icons-material";
 
+import Swal from 'sweetalert2';
+
 export default function UserDetails() {
   const { uid } = useParams();
   const [userDetails, setUserDetails] = useState(null);
@@ -33,6 +35,43 @@ export default function UserDetails() {
   const [selectedForm, setSelectedForm] = useState(null);
   const [tabIndex, setTabIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [regionNames, setRegionNames] = useState({});
+    const [boardNames, setBoardNames] = useState({});
+
+  const fetchRegionAndBoardNames = async () => {
+    try {
+        const regionCollectionRef = collection(firestore, 'locations');
+        const boardCollectionRef = collection(firestore, 'levels_and_boards');
+
+        // Fetch all regions
+        const regionSnapshot = await getDocs(regionCollectionRef);
+        const regionMap = {};
+        regionSnapshot.forEach(doc => {
+            regionMap[doc.id] = doc.data().name;
+        });
+        setRegionNames(regionMap);
+
+        // Fetch all boards
+        const boardSnapshot = await getDocs(boardCollectionRef);
+        const boardMap = {};
+        boardSnapshot.forEach(doc => {
+            boardMap[doc.id] = doc.data().name;
+        });
+        setBoardNames(boardMap);
+    } catch (error) {
+        console.error("Error fetching regions and boards:", error);
+        Swal.fire({
+            position: 'top-end',
+            icon: 'error',
+            title: 'An error occurred while fetching regions and boards.',
+            toast: true,
+            timerProgressBar: true,
+            showConfirmButton: false,
+            timer: 1500
+        });
+    }
+};
+
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -64,6 +103,7 @@ export default function UserDetails() {
     };
 
     fetchUserData();
+    fetchRegionAndBoardNames();
   }, [uid]);
 
   const handleCardClick = (form) => {
@@ -80,25 +120,25 @@ export default function UserDetails() {
   };
   const generatePDF = (form) => {
     const doc = new jsPDF();
-  
+
     // Set fonts for modern look
     doc.setFont("Helvetica", "normal");
     doc.setFontSize(20);
-  
+
     // Title of the document
     doc.setFont("Helvetica", "bold");
     doc.setTextColor(40, 53, 147); // Blue color for title
     doc.text("User Form Details", 20, 20);
-  
+
     let yPosition = 30; // Start from position 30 for content
-  
+
     // School Info Section
     doc.setTextColor(0, 0, 0); // Reset text color
     doc.setFont("Helvetica", "bold");
     doc.setFontSize(16);
     doc.text("School Information", 20, yPosition);
     yPosition += 10;
-  
+
     doc.setFontSize(12);
     doc.setFont("Helvetica", "normal");
     doc.text(`School Name: ${form.schoolDetails?.schoolName || "N/A"}`, 20, yPosition);
@@ -117,7 +157,7 @@ export default function UserDetails() {
     yPosition += 10;
     doc.text(`Visit Remark: ${form.schoolDetails?.visitRemark || "N/A"}`, 20, yPosition);
     yPosition += 10; // Add extra space after this section
-  
+
     // Principal Info Section
     if (form.principalInfo) {
       doc.setFont("Helvetica", "bold");
@@ -125,7 +165,7 @@ export default function UserDetails() {
       doc.setTextColor(0, 128, 0); // Green color for principal section
       doc.text("Principal Information", 20, yPosition);
       yPosition += 10;
-  
+
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(12);
       doc.setTextColor(0, 0, 0); // Reset color
@@ -140,7 +180,7 @@ export default function UserDetails() {
       doc.text(`Email: ${form.principalInfo.email || "N/A"}`, 20, yPosition);
       yPosition += 20; // Add extra space after principal info
     }
-  
+
     // Strengths Section
     if (form.strengths) {
       doc.setFont("Helvetica", "bold");
@@ -148,11 +188,11 @@ export default function UserDetails() {
       doc.setTextColor(0, 153, 255); // Light blue for strengths
       doc.text("Strengths", 20, yPosition);
       yPosition += 10;
-  
+
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(12);
       doc.setTextColor(0, 0, 0); // Reset color
-  
+
       // In 12th Strengths
       doc.text("In 12th:", 20, yPosition);
       yPosition += 10;
@@ -162,7 +202,7 @@ export default function UserDetails() {
       yPosition += 10;
       doc.text(`PCB: ${form.strengths?.pcb?.in12 || "N/A"}`, 20, yPosition);
       yPosition += 10;
-  
+
       // Coaching Strengths
       doc.text("Coaching:", 20, yPosition);
       yPosition += 10;
@@ -173,7 +213,7 @@ export default function UserDetails() {
       doc.text(`PCB: ${form.strengths?.pcb?.coaching || "N/A"}`, 20, yPosition);
       yPosition += 20; // Add extra space after strengths
     }
-  
+
     // Teachers Info - Add table for teachers
     if (form.graduationTeachers || form.pgtTeachers) {
       doc.setFont("Helvetica", "bold");
@@ -181,11 +221,11 @@ export default function UserDetails() {
       doc.setTextColor(255, 69, 0); // Red-orange for teachers section
       doc.text("Teachers Information", 20, yPosition);
       yPosition += 10;
-  
+
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(12);
       doc.setTextColor(0, 0, 0); // Reset color
-  
+
       // Graduation Teachers
       if (form.graduationTeachers) {
         doc.text("Graduation Teachers:", 20, yPosition);
@@ -196,7 +236,7 @@ export default function UserDetails() {
           yPosition += 20; // Increase space for next teacher
         });
       }
-  
+
       // PGT Teachers
       if (form.pgtTeachers) {
         doc.text("PGT Teachers:", 20, yPosition);
@@ -208,7 +248,7 @@ export default function UserDetails() {
         });
       }
     }
-  
+
     // Save the PDF with a modernized file name
     const filename = `${form.schoolDetails?.schoolName || "Form"}_${new Date().toISOString().slice(0, 10)}.pdf`;
     doc.save(filename);
@@ -301,100 +341,100 @@ export default function UserDetails() {
                 <Tab label="Documents" icon={<Description />} />
               </Tabs>
 
-          
-                            {/* Tab Content */}
-                            <Box style={{ marginTop: '20px' }}>
-                                {tabIndex === 0 && (
-                                    <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
-                                        <Typography variant="h6">School Info</Typography>
-                                        <Divider style={{ marginBottom: '10px' }} />
-                                        <p><strong>School Name:</strong> {selectedForm.schoolDetails?.schoolName}</p>
-                                        <p><strong>School Address:</strong> {selectedForm.schoolDetails?.schoolAddress}</p>
-                                        <p><strong>Region:</strong> {selectedForm.selectedRegion}</p>
-                                        <p><strong>Board:</strong> {selectedForm.selectedBoard}</p>
-                                        <p><strong>Date:</strong> {selectedForm.schoolDetails?.date}</p>
-                                        <p><strong>No. of Students:</strong> {selectedForm.schoolDetails?.noOfStudents}</p>
-                                        <p><strong>Topic Covered:</strong> {selectedForm.schoolDetails?.topicCovered}</p>
-                                        <p><strong>Visit Remark:</strong> {selectedForm.schoolDetails?.visitRemark}</p>
-                                    </Paper>
-                                )}
 
-                                {tabIndex === 1 && (
-                                    <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
-                                        <Typography variant="h6">Principal Info</Typography>
-                                        <Divider style={{ marginBottom: '10px' }} />
-                                        <p><strong>Name:</strong> {selectedForm.principalInfo?.name}</p>
-                                        <p><strong>Contact No:</strong> {selectedForm.principalInfo?.contactNo}</p>
-                                        <p><strong>DOB:</strong> {selectedForm.principalInfo?.dob}</p>
-                                        <p><strong>DOA:</strong> {selectedForm.principalInfo?.doa}</p>
-                                        <p><strong>Email:</strong> {selectedForm.principalInfo?.email}</p>
-                                    </Paper>
-                                )}
+              {/* Tab Content */}
+              <Box style={{ marginTop: '20px' }}>
+                {tabIndex === 0 && (
+                  <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
+                    <Typography variant="h6">School Info</Typography>
+                    <Divider style={{ marginBottom: '10px' }} />
+                    <p><strong>School Name:</strong> {selectedForm.schoolDetails?.schoolName}</p>
+                    <p><strong>School Address:</strong> {selectedForm.schoolDetails?.schoolAddress}</p>
+                    <Typography variant="body2"><strong>Region:</strong> {regionNames[selectedForm.selectedRegion] || 'N/A'}</Typography>
+                    <Typography variant="body2"><strong>Board:</strong> {boardNames[selectedForm.selectedBoard] || 'N/A'}</Typography>
+                    <p><strong>Date:</strong> {selectedForm.schoolDetails?.date}</p>
+                    <p><strong>No. of Students:</strong> {selectedForm.schoolDetails?.noOfStudents}</p>
+                    <p><strong>Topic Covered:</strong> {selectedForm.schoolDetails?.topicCovered}</p>
+                    <p><strong>Visit Remark:</strong> {selectedForm.schoolDetails?.visitRemark}</p>
+                  </Paper>
+                )}
 
-                                {tabIndex === 2 && (
-                                    <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
-                                        <Typography variant="h6">Teachers Info</Typography>
-                                        <Divider style={{ marginBottom: '10px' }} />
-                                        <Typography variant="subtitle1">Graduation Teachers</Typography>
-                                        <List>
-                                            {selectedForm.graduationTeachers?.map((teacher, index) => (
-                                                <ListItem key={teacher.id}>
-                                                    <ListItemText
-                                                        primary={<strong>{teacher.name}</strong>}
-                                                        secondary={`${teacher.subject} - ${teacher.contactNo} - DOB: ${teacher.dob} - DOA: ${teacher.doa} - Email: ${teacher.email}`}
-                                                    />
-                                                </ListItem>
-                                            ))}
-                                        </List>
+                {tabIndex === 1 && (
+                  <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
+                    <Typography variant="h6">Principal Info</Typography>
+                    <Divider style={{ marginBottom: '10px' }} />
+                    <p><strong>Name:</strong> {selectedForm.principalInfo?.name}</p>
+                    <p><strong>Contact No:</strong> {selectedForm.principalInfo?.contactNo}</p>
+                    <p><strong>DOB:</strong> {selectedForm.principalInfo?.dob}</p>
+                    <p><strong>DOA:</strong> {selectedForm.principalInfo?.doa}</p>
+                    <p><strong>Email:</strong> {selectedForm.principalInfo?.email}</p>
+                  </Paper>
+                )}
 
-                                        <Typography variant="subtitle1" style={{ marginTop: '20px' }}>PGT Teachers</Typography>
-                                        <List>
-                                            {selectedForm.pgtTeachers?.map((teacher, index) => (
-                                                <ListItem key={teacher.id}>
-                                                    <ListItemText
-                                                        primary={<strong>{teacher.name}</strong>}
-                                                        secondary={`${teacher.subject} - ${teacher.contactNo} - DOB: ${teacher.dob} - DOA: ${teacher.doa} - Email: ${teacher.email}`}
-                                                    />
-                                                </ListItem>
-                                            ))}
-                                        </List>
-                                    </Paper>
-                                )}
+                {tabIndex === 2 && (
+                  <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
+                    <Typography variant="h6">Teachers Info</Typography>
+                    <Divider style={{ marginBottom: '10px' }} />
+                    <Typography variant="subtitle1">Graduation Teachers</Typography>
+                    <List>
+                      {selectedForm.graduationTeachers?.map((teacher, index) => (
+                        <ListItem key={teacher.id}>
+                          <ListItemText
+                            primary={<strong>{teacher.name}</strong>}
+                            secondary={`${teacher.subject} - ${teacher.contactNo} - DOB: ${teacher.dob} - DOA: ${teacher.doa} - Email: ${teacher.email}`}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
 
-                                {tabIndex === 3 && (
-                                    <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
-                                        <Typography variant="h6">Strengths</Typography>
-                                        <Divider style={{ marginBottom: '10px' }} />
-                                        <Typography variant="subtitle1">In 12th</Typography>
-                                        <p><strong>Commerce:</strong> {selectedForm.strengths?.commerce?.in12 || 'N/A'}</p>
-                                        <p><strong>PCM:</strong> {selectedForm.strengths?.pcm?.in12 || 'N/A'}</p>
-                                        <p><strong>PCB:</strong> {selectedForm.strengths?.pcb?.in12 || 'N/A'}</p>
+                    <Typography variant="subtitle1" style={{ marginTop: '20px' }}>PGT Teachers</Typography>
+                    <List>
+                      {selectedForm.pgtTeachers?.map((teacher, index) => (
+                        <ListItem key={teacher.id}>
+                          <ListItemText
+                            primary={<strong>{teacher.name}</strong>}
+                            secondary={`${teacher.subject} - ${teacher.contactNo} - DOB: ${teacher.dob} - DOA: ${teacher.doa} - Email: ${teacher.email}`}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Paper>
+                )}
 
-                                        <Typography variant="subtitle1" style={{ marginTop: '10px' }}>Coaching</Typography>
-                                        <p><strong>Commerce:</strong> {selectedForm.strengths?.commerce?.coaching || 'N/A'}</p>
-                                        <p><strong>PCM:</strong> {selectedForm.strengths?.pcm?.coaching || 'N/A'}</p>
-                                        <p><strong>PCB:</strong> {selectedForm.strengths?.pcb?.coaching || 'N/A'}</p>
-                                    </Paper>
-                                )}
+                {tabIndex === 3 && (
+                  <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
+                    <Typography variant="h6">Strengths</Typography>
+                    <Divider style={{ marginBottom: '10px' }} />
+                    <Typography variant="subtitle1">In 12th</Typography>
+                    <p><strong>Commerce:</strong> {selectedForm.strengths?.commerce?.in12 || 'N/A'}</p>
+                    <p><strong>PCM:</strong> {selectedForm.strengths?.pcm?.in12 || 'N/A'}</p>
+                    <p><strong>PCB:</strong> {selectedForm.strengths?.pcb?.in12 || 'N/A'}</p>
 
-                                {tabIndex === 4 && (
-                                    <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
-                                        <Typography variant="h6">Documents</Typography>
-                                        <Divider style={{ marginBottom: '10px' }} />
-                                        <List>
-                                            {selectedForm.documentUrls?.map((url, i) => (
-                                                <ListItem key={i}>
-                                                    <ListItemText
-                                                        primary={<a href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: '#1976d2' }}>View Document {i + 1}</a>}
-                                                    />
-                                                </ListItem>
-                                            ))}
-                                        </List>
-                                    </Paper>
-                                )}
-                            </Box>
-                        </Box>
-                    )}
+                    <Typography variant="subtitle1" style={{ marginTop: '10px' }}>Coaching</Typography>
+                    <p><strong>Commerce:</strong> {selectedForm.strengths?.commerce?.coaching || 'N/A'}</p>
+                    <p><strong>PCM:</strong> {selectedForm.strengths?.pcm?.coaching || 'N/A'}</p>
+                    <p><strong>PCB:</strong> {selectedForm.strengths?.pcb?.coaching || 'N/A'}</p>
+                  </Paper>
+                )}
+
+                {tabIndex === 4 && (
+                  <Paper style={{ padding: '16px', backgroundColor: '#ffffff' }}>
+                    <Typography variant="h6">Documents</Typography>
+                    <Divider style={{ marginBottom: '10px' }} />
+                    <List>
+                      {selectedForm.documentUrls?.map((url, i) => (
+                        <ListItem key={i}>
+                          <ListItemText
+                            primary={<a href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: '#1976d2' }}>View Document {i + 1}</a>}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Paper>
+                )}
+              </Box>
+            </Box>
+          )}
         </DialogContent>
       </Dialog>
     </div>

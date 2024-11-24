@@ -4,16 +4,54 @@ import { getAuth } from 'firebase/auth';
 import { firestore } from '../../utils/firebaseConfig';
 import { CircularProgress, Dialog, DialogTitle, DialogContent, Typography, Card, CardContent, Grid, Divider, Paper, Button, Tab, Tabs, Box, List, ListItem, ListItemText } from '@mui/material';
 import Swal from 'sweetalert2';
-import {  School, Person, Group, Layers, Description } from '@mui/icons-material'; 
+import { School, Person, Group, Layers, Description } from '@mui/icons-material';
 
 const ViewDataForm = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [dataForms, setDataForms] = useState([]);
-    const [selectedForm, setSelectedForm] = useState(null); 
+    const [selectedForm, setSelectedForm] = useState(null);
     const [tabIndex, setTabIndex] = useState(0); // For tabs
+    const [regionNames, setRegionNames] = useState({});
+    const [boardNames, setBoardNames] = useState({});
     const auth = getAuth();
     const userId = auth.currentUser?.uid;
 
+    // Fetch regions and boards names from Firestore
+    const fetchRegionAndBoardNames = async () => {
+        try {
+            const regionCollectionRef = collection(firestore, 'locations');
+            const boardCollectionRef = collection(firestore, 'levels_and_boards');
+
+            // Fetch all regions
+            const regionSnapshot = await getDocs(regionCollectionRef);
+            const regionMap = {};
+            regionSnapshot.forEach(doc => {
+                regionMap[doc.id] = doc.data().name;
+            });
+            setRegionNames(regionMap);
+
+            // Fetch all boards
+            const boardSnapshot = await getDocs(boardCollectionRef);
+            const boardMap = {};
+            boardSnapshot.forEach(doc => {
+                boardMap[doc.id] = doc.data().name;
+            });
+            setBoardNames(boardMap);
+        } catch (error) {
+            console.error("Error fetching regions and boards:", error);
+            Swal.fire({
+                position: 'top-end',
+                icon: 'error',
+                title: 'An error occurred while fetching regions and boards.',
+                toast: true,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
+    };
+
+    // Fetch all data forms
     useEffect(() => {
         const fetchAllDetails = async () => {
             if (!userId) {
@@ -69,6 +107,7 @@ const ViewDataForm = () => {
         };
 
         fetchAllDetails();
+        fetchRegionAndBoardNames();
     }, [userId]);
 
     const handleCardClick = (form) => {
@@ -146,8 +185,8 @@ const ViewDataForm = () => {
                                         <Divider style={{ marginBottom: '10px' }} />
                                         <p><strong>School Name:</strong> {selectedForm.schoolDetails?.schoolName}</p>
                                         <p><strong>School Address:</strong> {selectedForm.schoolDetails?.schoolAddress}</p>
-                                        <p><strong>Region:</strong> {selectedForm.selectedRegion}</p>
-                                        <p><strong>Board:</strong> {selectedForm.selectedBoard}</p>
+                                        <Typography variant="body2"><strong>Region:</strong> {regionNames[selectedForm.selectedRegion] || 'N/A'}</Typography>
+                                        <Typography variant="body2"><strong>Board:</strong> {boardNames[selectedForm.selectedBoard] || 'N/A'}</Typography>
                                         <p><strong>Date:</strong> {selectedForm.schoolDetails?.date}</p>
                                         <p><strong>No. of Students:</strong> {selectedForm.schoolDetails?.noOfStudents}</p>
                                         <p><strong>Topic Covered:</strong> {selectedForm.schoolDetails?.topicCovered}</p>
