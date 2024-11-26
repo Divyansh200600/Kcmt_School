@@ -36,41 +36,41 @@ export default function UserDetails() {
   const [tabIndex, setTabIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [regionNames, setRegionNames] = useState({});
-    const [boardNames, setBoardNames] = useState({});
+  const [boardNames, setBoardNames] = useState({});
 
   const fetchRegionAndBoardNames = async () => {
     try {
-        const regionCollectionRef = collection(firestore, 'locations');
-        const boardCollectionRef = collection(firestore, 'levels_and_boards');
+      const regionCollectionRef = collection(firestore, 'locations');
+      const boardCollectionRef = collection(firestore, 'levels_and_boards');
 
-        // Fetch all regions
-        const regionSnapshot = await getDocs(regionCollectionRef);
-        const regionMap = {};
-        regionSnapshot.forEach(doc => {
-            regionMap[doc.id] = doc.data().name;
-        });
-        setRegionNames(regionMap);
+      // Fetch all regions
+      const regionSnapshot = await getDocs(regionCollectionRef);
+      const regionMap = {};
+      regionSnapshot.forEach(doc => {
+        regionMap[doc.id] = doc.data().name;
+      });
+      setRegionNames(regionMap);
 
-        // Fetch all boards
-        const boardSnapshot = await getDocs(boardCollectionRef);
-        const boardMap = {};
-        boardSnapshot.forEach(doc => {
-            boardMap[doc.id] = doc.data().name;
-        });
-        setBoardNames(boardMap);
+      // Fetch all boards
+      const boardSnapshot = await getDocs(boardCollectionRef);
+      const boardMap = {};
+      boardSnapshot.forEach(doc => {
+        boardMap[doc.id] = doc.data().name;
+      });
+      setBoardNames(boardMap);
     } catch (error) {
-        console.error("Error fetching regions and boards:", error);
-        Swal.fire({
-            position: 'top-end',
-            icon: 'error',
-            title: 'An error occurred while fetching regions and boards.',
-            toast: true,
-            timerProgressBar: true,
-            showConfirmButton: false,
-            timer: 1500
-        });
+      console.error("Error fetching regions and boards:", error);
+      Swal.fire({
+        position: 'top-end',
+        icon: 'error',
+        title: 'An error occurred while fetching regions and boards.',
+        toast: true,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        timer: 1500
+      });
     }
-};
+  };
 
 
   useEffect(() => {
@@ -118,141 +118,154 @@ export default function UserDetails() {
   const handleTabChange = (_, newValue) => {
     setTabIndex(newValue);
   };
-  const generatePDF = (form) => {
-    const doc = new jsPDF();
 
-    // Set fonts for modern look
-    doc.setFont("Helvetica", "normal");
-    doc.setFontSize(20);
+  const downloadPDF = async () => {
+    if (!selectedForm) return;
 
-    // Title of the document
-    doc.setFont("Helvetica", "bold");
-    doc.setTextColor(40, 53, 147); // Blue color for title
-    doc.text("User Form Details", 20, 20);
+    const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: 'a4',
+    });
 
-    let yPosition = 30; // Start from position 30 for content
+    try {
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const margin = 20;
 
-    // School Info Section
-    doc.setTextColor(0, 0, 0); // Reset text color
-    doc.setFont("Helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("School Information", 20, yPosition);
-    yPosition += 10;
+        // Title Section
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(18);
+        pdf.text(`Form Details - ${selectedForm.schoolDetails?.schoolName}`, margin, 30);
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`Date: ${selectedForm.schoolDetails?.date}`, margin, 50);
 
-    doc.setFontSize(12);
-    doc.setFont("Helvetica", "normal");
-    doc.text(`School Name: ${form.schoolDetails?.schoolName || "N/A"}`, 20, yPosition);
-    yPosition += 10;
-    doc.text(`Address: ${form.schoolDetails?.schoolAddress || "N/A"}`, 20, yPosition);
-    yPosition += 10;
-    doc.text(`Region: ${form.selectedRegion || "N/A"}`, 20, yPosition);
-    yPosition += 10;
-    doc.text(`Board: ${form.selectedBoard || "N/A"}`, 20, yPosition);
-    yPosition += 10;
-    doc.text(`Date: ${form.schoolDetails?.date || "N/A"}`, 20, yPosition);
-    yPosition += 10;
-    doc.text(`No. of Students: ${form.schoolDetails?.noOfStudents || "N/A"}`, 20, yPosition);
-    yPosition += 10;
-    doc.text(`Topic Covered: ${form.schoolDetails?.topicCovered || "N/A"}`, 20, yPosition);
-    yPosition += 10;
-    doc.text(`Visit Remark: ${form.schoolDetails?.visitRemark || "N/A"}`, 20, yPosition);
-    yPosition += 10; // Add extra space after this section
+        let currentY = 70; // Start point for the content
 
-    // Principal Info Section
-    if (form.principalInfo) {
-      doc.setFont("Helvetica", "bold");
-      doc.setFontSize(16);
-      doc.setTextColor(0, 128, 0); // Green color for principal section
-      doc.text("Principal Information", 20, yPosition);
-      yPosition += 10;
+        // School Info Section
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(14);
+        pdf.text('School Info:', margin, currentY);
+        currentY += 10;
 
-      doc.setFont("Helvetica", "normal");
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0); // Reset color
-      doc.text(`Name: ${form.principalInfo.name || "N/A"}`, 20, yPosition);
-      yPosition += 10;
-      doc.text(`Contact No: ${form.principalInfo.contactNo || "N/A"}`, 20, yPosition);
-      yPosition += 10;
-      doc.text(`DOB: ${form.principalInfo.dob || "N/A"}`, 20, yPosition);
-      yPosition += 10;
-      doc.text(`DOA: ${form.principalInfo.doa || "N/A"}`, 20, yPosition);
-      yPosition += 10;
-      doc.text(`Email: ${form.principalInfo.email || "N/A"}`, 20, yPosition);
-      yPosition += 20; // Add extra space after principal info
-    }
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(12);
+        pdf.text(`School Name: ${selectedForm.schoolDetails?.schoolName || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`Address: ${selectedForm.schoolDetails?.schoolAddress || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`Region: ${regionNames[selectedForm.selectedRegion] || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`Board: ${boardNames[selectedForm.selectedBoard] || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`Number of Students: ${selectedForm.schoolDetails?.noOfStudents || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`Topic Covered: ${selectedForm.schoolDetails?.topicCovered || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`Visit Remark: ${selectedForm.schoolDetails?.visitRemark || 'N/A'}`, margin, currentY);
+        currentY += 20;
 
-    // Strengths Section
-    if (form.strengths) {
-      doc.setFont("Helvetica", "bold");
-      doc.setFontSize(16);
-      doc.setTextColor(0, 153, 255); // Light blue for strengths
-      doc.text("Strengths", 20, yPosition);
-      yPosition += 10;
+        // Principal Info Section
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(14);
+        pdf.text('Principal Info:', margin, currentY);
+        currentY += 10;
 
-      doc.setFont("Helvetica", "normal");
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0); // Reset color
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(12);
+        pdf.text(`Name: ${selectedForm.principalInfo?.name || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`Contact No: ${selectedForm.principalInfo?.contactNo || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`DOB: ${selectedForm.principalInfo?.dob || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`DOA: ${selectedForm.principalInfo?.doa || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`Email: ${selectedForm.principalInfo?.email || 'N/A'}`, margin, currentY);
+        currentY += 20;
 
-      // In 12th Strengths
-      doc.text("In 12th:", 20, yPosition);
-      yPosition += 10;
-      doc.text(`Commerce: ${form.strengths?.commerce?.in12 || "N/A"}`, 20, yPosition);
-      yPosition += 10;
-      doc.text(`PCM: ${form.strengths?.pcm?.in12 || "N/A"}`, 20, yPosition);
-      yPosition += 10;
-      doc.text(`PCB: ${form.strengths?.pcb?.in12 || "N/A"}`, 20, yPosition);
-      yPosition += 10;
+        // Teachers Info Section
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(14);
+        pdf.text('Teachers Info:', margin, currentY);
+        currentY += 10;
 
-      // Coaching Strengths
-      doc.text("Coaching:", 20, yPosition);
-      yPosition += 10;
-      doc.text(`Commerce: ${form.strengths?.commerce?.coaching || "N/A"}`, 20, yPosition);
-      yPosition += 10;
-      doc.text(`PCM: ${form.strengths?.pcm?.coaching || "N/A"}`, 20, yPosition);
-      yPosition += 10;
-      doc.text(`PCB: ${form.strengths?.pcb?.coaching || "N/A"}`, 20, yPosition);
-      yPosition += 20; // Add extra space after strengths
-    }
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Graduation Teachers:', margin, currentY);
+        currentY += 10;
 
-    // Teachers Info - Add table for teachers
-    if (form.graduationTeachers || form.pgtTeachers) {
-      doc.setFont("Helvetica", "bold");
-      doc.setFontSize(16);
-      doc.setTextColor(255, 69, 0); // Red-orange for teachers section
-      doc.text("Teachers Information", 20, yPosition);
-      yPosition += 10;
-
-      doc.setFont("Helvetica", "normal");
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0); // Reset color
-
-      // Graduation Teachers
-      if (form.graduationTeachers) {
-        doc.text("Graduation Teachers:", 20, yPosition);
-        yPosition += 10;
-        form.graduationTeachers.forEach((teacher, index) => {
-          doc.text(`${index + 1}. ${teacher.name} (${teacher.subject})`, 20, yPosition);
-          doc.text(`Contact: ${teacher.contactNo} | Email: ${teacher.email}`, 20, yPosition + 10);
-          yPosition += 20; // Increase space for next teacher
+        pdf.setFont('helvetica', 'normal');
+        selectedForm.graduationTeachers?.forEach((teacher, index) => {
+            pdf.text(`${index + 1}. Name: ${teacher.name || 'N/A'}, Subject: ${teacher.subject || 'N/A'}`, margin, currentY);
+            currentY += 10;
+            pdf.text(`   Contact: ${teacher.contactNo || 'N/A'}, DOB: ${teacher.dob || 'N/A'}, DOA: ${teacher.doa || 'N/A'}, Email: ${teacher.email || 'N/A'}`, margin, currentY);
+            currentY += 10;
         });
-      }
 
-      // PGT Teachers
-      if (form.pgtTeachers) {
-        doc.text("PGT Teachers:", 20, yPosition);
-        yPosition += 10;
-        form.pgtTeachers.forEach((teacher, index) => {
-          doc.text(`${index + 1}. ${teacher.name} (${teacher.subject})`, 20, yPosition);
-          doc.text(`Contact: ${teacher.contactNo} | Email: ${teacher.email}`, 20, yPosition + 10);
-          yPosition += 20;
+        currentY += 10;
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('PGT Teachers:', margin, currentY);
+        currentY += 10;
+
+        pdf.setFont('helvetica', 'normal');
+        selectedForm.pgtTeachers?.forEach((teacher, index) => {
+            pdf.text(`${index + 1}. Name: ${teacher.name || 'N/A'}, Subject: ${teacher.subject || 'N/A'}`, margin, currentY);
+            currentY += 10;
+            pdf.text(`   Contact: ${teacher.contactNo || 'N/A'}, DOB: ${teacher.dob || 'N/A'}, DOA: ${teacher.doa || 'N/A'}, Email: ${teacher.email || 'N/A'}`, margin, currentY);
+            currentY += 10;
         });
-      }
-    }
 
-    // Save the PDF with a modernized file name
-    const filename = `${form.schoolDetails?.schoolName || "Form"}_${new Date().toISOString().slice(0, 10)}.pdf`;
-    doc.save(filename);
-  };
+        currentY += 20;
+
+        // Strengths Section
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(14);
+        pdf.text('Strengths:', margin, currentY);
+        currentY += 10;
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`Commerce (12th): ${selectedForm.strengths?.commerce?.in12 || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`PCM (12th): ${selectedForm.strengths?.pcm?.in12 || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`PCB (12th): ${selectedForm.strengths?.pcb?.in12 || 'N/A'}`, margin, currentY);
+        currentY += 10;
+
+        pdf.text(`Commerce (Coaching): ${selectedForm.strengths?.commerce?.coaching || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`PCM (Coaching): ${selectedForm.strengths?.pcm?.coaching || 'N/A'}`, margin, currentY);
+        currentY += 10;
+        pdf.text(`PCB (Coaching): ${selectedForm.strengths?.pcb?.coaching || 'N/A'}`, margin, currentY);
+        currentY += 20;
+
+        // Documents Section
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(14);
+        pdf.text('Documents:', margin, currentY);
+        currentY += 10;
+
+        pdf.setFont('helvetica', 'normal');
+        selectedForm.documentUrls?.forEach((url, index) => {
+            pdf.text(`${index + 1}. ${url}`, margin, currentY);
+            currentY += 10;
+
+            if (currentY > 750) { // Prevent overflow
+                pdf.addPage();
+                currentY = margin;
+            }
+        });
+
+        pdf.save(`Form_${selectedForm.id}_Details.pdf`);
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred while generating the PDF. Please try again.',
+        });
+    }
+};
+
 
   if (isLoading) {
     return (
@@ -307,21 +320,7 @@ export default function UserDetails() {
                 <Typography variant="body2">
                   <strong>Date:</strong> {form.schoolDetails?.date}
                 </Typography>
-                <Button
-                  startIcon={<FaFilePdf />}
-                  style={{
-                    marginTop: "10px",
-                    backgroundColor: "#ff5722",
-                    color: "white",
-                    textTransform: "none",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    generatePDF(form);
-                  }}
-                >
-                  Download PDF
-                </Button>
+              
               </CardContent>
             </Card>
           </Grid>
@@ -432,6 +431,16 @@ export default function UserDetails() {
                     </List>
                   </Paper>
                 )}
+                 <div>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<FaFilePdf />}
+                        onClick={downloadPDF}
+                      >
+                        Download PDF
+                      </Button>
+                    </div>
               </Box>
             </Box>
           )}
