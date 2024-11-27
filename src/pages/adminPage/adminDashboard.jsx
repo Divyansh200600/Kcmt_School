@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Link,useNavigate } from 'react-router-dom';
-import { 
-  Dashboard, Group, School, LocalLibrary, LocationOn, Person, SchoolRounded, 
-  LibraryBooks, SchoolOutlined, Stream, ExpandMore, ExpandLess ,LocationCity,SupervisedUserCircle
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Dashboard, Group, School, LocalLibrary, LocationOn, Person, SchoolRounded,AssignmentLateTwoTone,
+  LibraryBooks, SchoolOutlined, Stream, ExpandMore, ExpandLess, LocationCity, SupervisedUserCircle
 } from '@mui/icons-material';
 import { Collapse } from '@mui/material';
 import { signOut } from 'firebase/auth';
-import { auth } from '../../utils/firebaseConfig'; 
+import { auth } from '../../utils/firebaseConfig';
 
 // All Masters Import here ---->
 import Db from '../../components/adminComps/Masters/dashboard';
@@ -22,38 +22,46 @@ import StreamMaster from '../../components/adminComps/Masters/streamMaster';
 import StaffMaster from '../../components/adminComps/Masters/staffMaster';
 import AddSchool from '../../components/adminComps/Masters/addSchool';
 import ManageUsers from '../../components/adminComps/Masters/manageUser';
-import Swal from 'sweetalert2'; 
+import Swal from 'sweetalert2';
+
+// All Reports Imports Here ------>
+
+import AssignUserRoles from '../../components/adminComps/Roles/assignUserRoles';
+
 // All Reports Imports Here ------>
 
 import Reports from '../../components/adminComps/Reports/schoolInfoReport';
 import SchoolData from '../../components/adminComps/Reports/schoolData';
 const AdminDashboard = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Default open sidebar
+  const [sidebarOpen, setSidebarOpen] = useState(true); 
   const [activeMenu, setActiveMenu] = useState('dashboard');
-  const [mastersOpen, setMastersOpen] = useState(false); // Toggle for Masters section
-  const [reportsOpen, setReportsOpen] = useState(false); // Toggle for Reports section
-  const navigate = useNavigate(); 
+  const [mastersOpen, setMastersOpen] = useState(false); 
+  const [reportsOpen, setReportsOpen] = useState(false);
+  const [assignRoleOpen, setAssignRoleOpen] = useState(false);
+ 
+  const navigate = useNavigate();
 
-  // Toggle sidebar on mobile screens
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Handle menu selection for active state
+  const toggleAssignRole = () => {
+    setAssignRoleOpen((prev) => !prev);
+  };
+
   const handleMenuClick = (menu) => {
     setActiveMenu(menu);
   };
 
-  // Toggle expand/collapse for Masters section
   const toggleMasters = () => {
     setMastersOpen(!mastersOpen);
   };
 
-  // Toggle expand/collapse for Reports section
   const toggleReports = () => {
     setReportsOpen(!reportsOpen);
   };
 
+  
   const handleLogout = async () => {
     try {
       // Show a toast-style confirmation before logout
@@ -67,10 +75,10 @@ const AdminDashboard = () => {
         timer: 2000, // Duration for the toast (in ms)
         timerProgressBar: true, // Show a progress bar for the timer
       });
-  
+
       // Sign out from Firebase Authentication
       await signOut(auth);
-  
+
       // Show a success toast after logging out
       Swal.fire({
         title: 'Successfully logged out!',
@@ -81,12 +89,12 @@ const AdminDashboard = () => {
         timer: 2000,
         timerProgressBar: true,
       });
-  
+
       // Navigate to the login page
       navigate('/SIS-login');
     } catch (error) {
       console.error("Error logging out:", error);
-  
+
       // Show an error toast if there's a problem
       Swal.fire({
         title: 'Error logging out!',
@@ -128,9 +136,8 @@ const AdminDashboard = () => {
       </style>
 
       <div
-        className={`transition-all duration-300 bg-gray-800 text-white p-6 flex flex-col space-y-6 fixed left-0 top-0 h-full z-50 md:w-64 ${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } md:block hidden sidebar-scrollbar`}
+        className={`transition-all duration-300 bg-gray-800 text-white p-6 flex flex-col space-y-6 fixed left-0 top-0 h-full z-50 md:w-64 ${sidebarOpen ? 'w-64' : 'w-20'
+          } md:block hidden sidebar-scrollbar`}
       >
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
@@ -145,9 +152,8 @@ const AdminDashboard = () => {
         <ul className="space-y-6 mt-6">
           {/* Dashboard Menu */}
           <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'dashboard' ? 'bg-gray-700' : ''
-            }`}
+            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'dashboard' ? 'bg-gray-700' : ''
+              }`}
             onClick={() => handleMenuClick('dashboard')}
           >
             <Dashboard />
@@ -156,9 +162,8 @@ const AdminDashboard = () => {
 
           {/* Add User */}
           <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'addUser' ? 'bg-gray-700' : ''
-            }`}
+            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'addUser' ? 'bg-gray-700' : ''
+              }`}
             onClick={() => handleMenuClick('addUser')}
           >
             <Person />
@@ -166,9 +171,8 @@ const AdminDashboard = () => {
           </li>
 
           <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'manageUsers' ? 'bg-gray-700' : ''
-            }`}
+            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'manageUsers' ? 'bg-gray-700' : ''
+              }`}
             onClick={() => handleMenuClick('manageUsers')}
           >
             <SupervisedUserCircle />
@@ -176,9 +180,8 @@ const AdminDashboard = () => {
           </li>
 
           <li
-            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-              activeMenu === 'addSchool' ? 'bg-gray-700' : ''
-            }`}
+            className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'addSchool' ? 'bg-gray-700' : ''
+              }`}
             onClick={() => handleMenuClick('addSchool')}
           >
             <SchoolRounded />
@@ -188,9 +191,8 @@ const AdminDashboard = () => {
           {/* Masters Section (Collapsible) */}
           <li>
             <div
-              className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                mastersOpen ? 'bg-gray-700' : ''
-              }`}
+              className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${mastersOpen ? 'bg-gray-700' : ''
+                }`}
               onClick={toggleMasters}
             >
               <Group />
@@ -203,87 +205,108 @@ const AdminDashboard = () => {
               <ul className="space-y-4 pl-8">
                 {/* Master Items */}
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'roleMaster' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'roleMaster' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('roleMaster')}
                 >
                   <Group />
                   {sidebarOpen && <span className="font-medium">Role Master</span>}
                 </li>
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'institutionMaster' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'institutionMaster' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('institutionMaster')}
                 >
                   <School />
                   {sidebarOpen && <span className="font-medium">Institute Master</span>}
                 </li>
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'levelBoardMaster' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'levelBoardMaster' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('levelBoardMaster')}
                 >
                   <LocalLibrary />
                   {sidebarOpen && <span className="font-medium">Level/Board Master</span>}
                 </li>
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'designationMaster' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'designationMaster' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('designationMaster')}
                 >
                   <Person />
                   {sidebarOpen && <span className="font-medium">Designation</span>}
                 </li>
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'sessionMaster' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'sessionMaster' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('sessionMaster')}
                 >
                   <LibraryBooks />
                   {sidebarOpen && <span className="font-medium">Session Master</span>}
                 </li>
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'locationMaster' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'locationMaster' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('locationMaster')}
                 >
                   <LocationOn />
                   {sidebarOpen && <span className="font-medium">Region Master</span>}
                 </li>
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'locationSubMaster' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'locationSubMaster' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('locationSubMaster')}
                 >
                   <LocationCity />
                   {sidebarOpen && <span className="font-medium">Region Sub Master</span>}
                 </li>
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'streamMaster' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'streamMaster' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('streamMaster')}
                 >
                   <Stream />
                   {sidebarOpen && <span className="font-medium">Stream Master</span>}
                 </li>
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'staffMaster' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'staffMaster' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('staffMaster')}
                 >
                   <SchoolOutlined />
                   {sidebarOpen && <span className="font-medium">Staff Master</span>}
                 </li>
-                
+
+              </ul>
+            </Collapse>
+          </li>
+
+          {/* Assign Role Section (Collapsible) */}
+          <li>
+            <div
+              className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${assignRoleOpen ? 'bg-gray-700' : ''}`}
+              onClick={toggleAssignRole} // Function to toggle the visibility of the "Assign Role" section
+            >
+              {/* Replace with an appropriate icon */}
+              <AssignmentLateTwoTone />
+              {sidebarOpen && <span className="font-medium">Assign Role</span>}
+              <span className="ml-auto">
+                {assignRoleOpen ? <ExpandLess /> : <ExpandMore />}
+              </span>
+            </div>
+            <Collapse in={assignRoleOpen}>
+              <ul className="space-y-4 pl-8">
+                {/* Dummy Role Items */}
+                <li
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'role1' ? 'bg-gray-700' : ''
+                    }`}
+                  onClick={() => handleMenuClick('role1')}
+                >
+                  {/* Replace with an appropriate icon for "Role 1" */}
+                  <AssignmentLateTwoTone />
+                  {sidebarOpen && <span className="font-medium">Assign User Role</span>}
+                </li>
+              
               </ul>
             </Collapse>
           </li>
@@ -291,9 +314,8 @@ const AdminDashboard = () => {
           {/* Reports Section (Collapsible) */}
           <li>
             <div
-              className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                reportsOpen ? 'bg-gray-700' : ''
-              }`}
+              className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${reportsOpen ? 'bg-gray-700' : ''
+                }`}
               onClick={toggleReports}
             >
               <LibraryBooks />
@@ -306,36 +328,32 @@ const AdminDashboard = () => {
               <ul className="space-y-4 pl-8">
                 {/* Dummy Report Items */}
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'report1' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'report1' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('report1')}
                 >
                   <LibraryBooks />
-                  {sidebarOpen && <span className="font-medium">School Information Report</span>}
+                  {sidebarOpen && <span className="font-medium">S.I Report</span>}
                 </li>
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'report2' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'report2' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('report2')}
                 >
                   <LibraryBooks />
                   {sidebarOpen && <span className="font-medium">School Data</span>}
                 </li>
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'report3' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'report3' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('report3')}
                 >
                   <LibraryBooks />
                   {sidebarOpen && <span className="font-medium">Report 3</span>}
                 </li>
                 <li
-                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${
-                    activeMenu === 'report4' ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center space-x-4 p-2 rounded-md cursor-pointer transition-all hover:bg-gray-700 ${activeMenu === 'report4' ? 'bg-gray-700' : ''
+                    }`}
                   onClick={() => handleMenuClick('report4')}
                 >
                   <LibraryBooks />
@@ -371,8 +389,13 @@ const AdminDashboard = () => {
           {activeMenu === 'staffMaster' && <StaffMaster />}
           {activeMenu === 'addSchool' && <AddSchool />}
           {activeMenu === 'manageUsers' && <ManageUsers />}
-          {activeMenu === 'report1' && <div><Reports/></div>}
-          {activeMenu === 'report2' && <div><SchoolData/></div>}
+
+
+          {activeMenu === 'role1' && <AssignUserRoles/>}
+
+
+          {activeMenu === 'report1' && <div><Reports /></div>}
+          {activeMenu === 'report2' && <div><SchoolData /></div>}
           {activeMenu === 'report3' && <div>Report 3 content</div>}
           {activeMenu === 'report4' && <div>Report 4 content</div>}
         </div>

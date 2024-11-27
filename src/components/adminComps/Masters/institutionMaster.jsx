@@ -15,6 +15,14 @@ const InstitutionMaster = () => {
 
   const types = ['School', 'College', 'Coaching', 'Tutor', 'Internet', 'Book Store'];
 
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+  });
+
   // Fetch institutions from Firestore in real-time
   useEffect(() => {
     const institutionsCollection = collection(firestore, 'institutions');
@@ -58,33 +66,48 @@ const InstitutionMaster = () => {
   // Handle save institution
   const handleSaveInstitution = async () => {
     if (!currentInstitution.name || !currentInstitution.code || !currentInstitution.address || !currentInstitution.contact || !currentInstitution.type) {
-      Swal.fire('Error', 'All fields are required!', 'error');
+      Toast.fire({
+        icon: 'error',
+        title: 'All fields are required!',
+      });
       return;
     }
-
+  
     if (editMode) {
       // Update institution
       const institutionDoc = doc(firestore, 'institutions', currentInstitution.id);
       try {
         await updateDoc(institutionDoc, currentInstitution);
-        Swal.fire('Success', 'Institution updated successfully', 'success');
+        Toast.fire({
+          icon: 'success',
+          title: 'Institution updated successfully',
+        });
       } catch (error) {
-        Swal.fire('Error', 'Failed to update institution', 'error');
+        Toast.fire({
+          icon: 'error',
+          title: 'Failed to update institution',
+        });
       }
     } else {
       // Add new institution
       const institutionsCollection = collection(firestore, 'institutions');
       try {
         const docRef = await addDoc(institutionsCollection, currentInstitution);
-        Swal.fire('Success', 'Institution added successfully', 'success');
+        Toast.fire({
+          icon: 'success',
+          title: 'Institution added successfully',
+        });
       } catch (error) {
-        Swal.fire('Error', 'Failed to add institution', 'error');
+        Toast.fire({
+          icon: 'error',
+          title: 'Failed to add institution',
+        });
       }
     }
     handleCloseDialog();
   };
-
-  // Handle delete institution with confirmation
+  
+  // Inside the `handleDeleteInstitution` method
   const handleDeleteInstitution = async (institutionId) => {
     Swal.fire({
       title: 'Are you sure?',
@@ -99,9 +122,15 @@ const InstitutionMaster = () => {
         const institutionDoc = doc(firestore, 'institutions', institutionId);
         try {
           await deleteDoc(institutionDoc);
-          Swal.fire('Deleted!', 'The institution has been deleted.', 'success');
+          Toast.fire({
+            icon: 'success',
+            title: 'The institution has been deleted.',
+          });
         } catch (error) {
-          Swal.fire('Error', 'Failed to delete institution', 'error');
+          Toast.fire({
+            icon: 'error',
+            title: 'Failed to delete institution',
+          });
         }
       }
     });

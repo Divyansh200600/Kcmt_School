@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Grid, Box, Card, CardContent, Typography, Divider, Select, MenuItem, FormControl, InputLabel, InputAdornment } from '@mui/material';
+import { Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Grid, Box, Card, CardContent, Typography, Divider, Checkbox, FormControlLabel } from '@mui/material';
 import { Edit, Delete, AddCircle, Search } from '@mui/icons-material';
 import Swal from 'sweetalert2';
-import { firestore } from '../../../utils/firebaseConfig'; 
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { firestore } from '../../../utils/firebaseConfig';
+import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 
 export default function DesignationMaster() {
   const [designations, setDesignations] = useState([]);
@@ -11,6 +11,7 @@ export default function DesignationMaster() {
   const [currentDesignation, setCurrentDesignation] = useState({ name: '', isCustom: false });
   const [isEditMode, setIsEditMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRoles, setSelectedRoles] = useState([]); // To track selected predefined roles
   const [newDesignation, setNewDesignation] = useState('');
 
   // Predefined Designations
@@ -48,25 +49,41 @@ export default function DesignationMaster() {
     fetchData();
   }, []);
 
-  const handleOpenDialog = (designation = null) => {
-    setIsEditMode(!!designation);
-    setCurrentDesignation(designation || { name: '', isCustom: false });
+  const handleOpenDialog = () => {
+    setIsEditMode(false);
+    setCurrentDesignation({ name: '', isCustom: false });
+    setSelectedRoles([]); // Reset selected roles
+    setNewDesignation(''); // Reset custom designation
     setOpenDialog(true);
   };
 
   const handleCloseDialog = () => setOpenDialog(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCurrentDesignation({ ...currentDesignation, [name]: value });
+  const handleRoleSelection = (role) => {
+    setSelectedRoles((prevSelected) =>
+      prevSelected.includes(role)
+        ? prevSelected.filter((item) => item !== role) // Unselect role
+        : [...prevSelected, role] // Select role
+    );
+  };
+
+  // Check if designation already exists in Firestore
+  const checkIfDesignationExists = async (designationName) => {
+    try {
+      const designationsCollection = collection(firestore, 'designations');
+      const designationsSnapshot = await getDocs(designationsCollection);
+      const existingDesignation = designationsSnapshot.docs.find((doc) => doc.data().name.toLowerCase() === designationName.toLowerCase());
+      return existingDesignation !== undefined;
+    } catch (error) {
+      return false;
+    }
   };
 
   const handleSave = async () => {
-    // If user is adding a custom designation
-    if (currentDesignation.isCustom && !newDesignation) {
+    if (selectedRoles.length === 0 && !newDesignation.trim()) {
       Swal.fire({
         title: 'Error',
-        text: 'Custom designation name is required',
+        text: 'Please select at least one role or enter a custom designation.',
         icon: 'error',
         position: 'top-end',
         toast: true,
@@ -76,41 +93,51 @@ export default function DesignationMaster() {
       return;
     }
 
-    try {
-      if (isEditMode) {
-        // Update existing designation
-        const designationRef = doc(firestore, 'designations', currentDesignation.id);
-        await updateDoc(designationRef, { name: currentDesignation.name });
+    // Convert the custom designation to uppercase
+    const rolesToAdd = [
+      ...selectedRoles.map((role) => ({ name: role })),
+      ...(newDesignation ? [{ name: newDesignation.toUpperCase() }] : [])
+    ];
+
+    for (let role of rolesToAdd) {
+      const exists = await checkIfDesignationExists(role.name);
+      if (exists) {
         Swal.fire({
-          title: 'Success',
-          text: 'Designation updated successfully',
-          icon: 'success',
+          title: 'Error',
+          text: `${role.name} already exists.`,
+          icon: 'error',
           position: 'top-end',
           toast: true,
           timer: 3000,
           showConfirmButton: false
         });
-      } else {
-        // Add new designation, either from the dropdown or custom
-        const designationToSave = currentDesignation.isCustom ? { name: newDesignation } : { name: currentDesignation.name };
-        await addDoc(collection(firestore, 'designations'), designationToSave);
-        Swal.fire({
-          title: 'Success',
-          text: 'Designation added successfully',
-          icon: 'success',
-          position: 'top-end',
-          toast: true,
-          timer: 3000,
-          showConfirmButton: false
-        });
+        return;
       }
+    }
+
+    try {
+      const batchPromises = rolesToAdd.map((role) =>
+        addDoc(collection(firestore, 'designations'), role)
+      );
+
+      await Promise.all(batchPromises);
+
+      Swal.fire({
+        title: 'Success',
+        text: 'Designations added successfully',
+        icon: 'success',
+        position: 'top-end',
+        toast: true,
+        timer: 3000,
+        showConfirmButton: false
+      });
 
       fetchData();
       handleCloseDialog();
     } catch (error) {
       Swal.fire({
         title: 'Error',
-        text: 'Failed to save designation',
+        text: 'Failed to save designations',
         icon: 'error',
         position: 'top-end',
         toast: true,
@@ -128,35 +155,53 @@ export default function DesignationMaster() {
       showCancelButton: true,
       confirmButtonText: 'Yes, delete it!',
       cancelButtonText: 'No, cancel!',
-      position: 'top-end',
-      toast: true,
-      timer: 3000
-    }).then(async (result) => {
+      position: 'center',  // Show in the center for delete confirmation
+      showLoaderOnConfirm: true,
+      preConfirm: async () => {
+        try {
+          const designationRef = doc(firestore, 'designations', id);
+          await deleteDoc(designationRef);
+          return true;
+        } catch (error) {
+          return false;
+        }
+      },
+    }).then((result) => {
       if (result.isConfirmed) {
-        const designationRef = doc(firestore, 'designations', id);
-        await deleteDoc(designationRef);
         Swal.fire({
           title: 'Deleted!',
           text: 'The designation has been deleted.',
           icon: 'success',
-          position: 'top-end',
+          position: 'top-end', // Notification at the top-right
           toast: true,
           timer: 3000,
           showConfirmButton: false
         });
 
         fetchData();
+      } else if (result.isDismissed) {
+        Swal.fire({
+          title: 'Cancelled',
+          text: 'The designation was not deleted.',
+          icon: 'info',
+          position: 'top-end', // Notification at the top-right
+          toast: true,
+          timer: 3000,
+          showConfirmButton: false
+        });
       }
     });
   };
 
-  const filteredDesignations = designations.filter(designation =>
+  const filteredDesignations = designations.filter((designation) =>
     designation.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div style={{ padding: '20px' }}>
-      <Typography variant="h4" align="center" gutterBottom>Designation Master</Typography>
+      <Typography variant="h4" align="center" gutterBottom>
+        Designation Master
+      </Typography>
 
       <Box mb={3}>
         <TextField
@@ -167,10 +212,8 @@ export default function DesignationMaster() {
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
             startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
+              <Search position="start" />
+            )
           }}
         />
       </Box>
@@ -180,7 +223,12 @@ export default function DesignationMaster() {
           <Card>
             <CardContent>
               <Typography variant="h6">Designations</Typography>
-              <Button variant="contained" color="primary" onClick={() => handleOpenDialog()} startIcon={<AddCircle />}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleOpenDialog}
+                startIcon={<AddCircle />}
+              >
                 Add Designation
               </Button>
               <Divider sx={{ my: 2 }} />
@@ -188,8 +236,9 @@ export default function DesignationMaster() {
                 <Box key={designation.id} display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                   <Typography>{designation.name}</Typography>
                   <Box>
-                    <IconButton onClick={() => handleOpenDialog(designation)} color="primary"><Edit /></IconButton>
-                    <IconButton onClick={() => handleDelete(designation.id)} color="secondary"><Delete /></IconButton>
+                    <IconButton onClick={() => handleDelete(designation.id)} color="secondary">
+                      <Delete />
+                    </IconButton>
                   </Box>
                 </Box>
               ))}
@@ -198,44 +247,42 @@ export default function DesignationMaster() {
         </Grid>
       </Grid>
 
-      {/* Dialog for Add/Edit Designation */}
+      {/* Dialog for Add Designation */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>{isEditMode ? 'Edit Designation' : 'Add Designation'}</DialogTitle>
+        <DialogTitle>Add Designation</DialogTitle>
         <DialogContent>
-          <FormControl fullWidth margin="dense">
-            <InputLabel>Designation</InputLabel>
-            <Select
-              name="name"
-              value={currentDesignation.name || ''}
-              onChange={handleChange}
-            >
-              {/* Predefined Designations */}
-              {predefinedDesignations.map((designation, index) => (
-                <MenuItem key={index} value={designation}>
-                  {designation}
-                </MenuItem>
-              ))}
-              {/* Option to add custom designation */}
-              <MenuItem value="" onClick={() => setCurrentDesignation({ ...currentDesignation, isCustom: true })}>
-                Add Custom Designation
-              </MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* Custom Designation Input */}
-          {currentDesignation.isCustom && (
-            <TextField
-              label="Enter Custom Designation"
-              value={newDesignation}
-              onChange={(e) => setNewDesignation(e.target.value)}
-              fullWidth
-              margin="dense"
+          <Typography variant="subtitle1">Select Predefined Roles</Typography>
+          {predefinedDesignations.map((role) => (
+            <FormControlLabel
+              key={role}
+              control={
+                <Checkbox
+                  checked={selectedRoles.includes(role)}
+                  onChange={() => handleRoleSelection(role)}
+                />
+              }
+              label={role}
             />
-          )}
+          ))}
+
+          <Typography variant="subtitle1" style={{ marginTop: '16px' }}>
+            Or Add Custom Designation
+          </Typography>
+          <TextField
+            label="Custom Designation"
+            value={newDesignation.toUpperCase()}  // Always display in uppercase
+            onChange={(e) => setNewDesignation(e.target.value.toUpperCase())} // Convert to uppercase on change
+            fullWidth
+            margin="dense"
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog} color="secondary">Cancel</Button>
-          <Button onClick={handleSave} color="primary">Save</Button>
+          <Button onClick={handleCloseDialog} color="secondary">
+            Cancel
+          </Button>
+          <Button onClick={handleSave} color="primary">
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
     </div>

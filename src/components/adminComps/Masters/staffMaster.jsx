@@ -11,7 +11,7 @@ const StaffMaster = () => {
   const [staffData, setStaffData] = useState({
     staffName: '',
     designation: '',
-    stream: '',  // Changed from subject to stream
+    stream: '',  
     location: '',
     employmentStatus: '',
   });

@@ -13,6 +13,10 @@ export default function SchoolData() {
   const [availableSubLocations, setAvailableSubLocations] = useState([]);
   const [boardTotals, setBoardTotals] = useState({}); // Track totals for each board
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30; // Limit items per page
+
   // Fetch school data from Firestore on component load
   useEffect(() => {
     const fetchData = async () => {
@@ -71,7 +75,13 @@ export default function SchoolData() {
       );
     });
     setFilteredData(filtered); // Update the filtered data
+    setCurrentPage(1); // Reset to the first page when filters change
   }, [selectedBoard, selectedLocation, selectedSubLocation, schoolData]);
+
+  // Calculate paginated data
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
   // Generate a filtered PDF
   const generateCustomFilteredPDF = () => {
@@ -83,7 +93,7 @@ export default function SchoolData() {
       align: 'center',
     });
 
-    const tableData = filteredData.map((data) => [
+    const tableData = currentItems.map((data) => [
       data.SN,
       data.BOARD,
       data.LOCATION,
@@ -103,6 +113,19 @@ export default function SchoolData() {
     doc.save('FilteredSchoolData.pdf');
   };
 
+  // Handle Next and Previous buttons
+  const handleNextPage = () => {
+    if (currentPage < Math.ceil(filteredData.length / itemsPerPage)) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-6xl mx-auto bg-white shadow-md rounded-lg p-6">
@@ -111,25 +134,38 @@ export default function SchoolData() {
         {/* Board Selection (Tabs) */}
         <div className="mb-6">
           <div className="flex space-x-4 border-b-2">
-            {/* Render tabs dynamically based on the available boards */}
-            {[...new Set(schoolData.map((item) => item.BOARD))].map((board) => (
-              <button
-                key={board}
-                className={`px-4 py-2 text-lg font-semibold focus:outline-none ${
-                  selectedBoard === board ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'
-                }`}
-                onClick={() => setSelectedBoard(board)}
-              >
-                {board} ({boardTotals[board] || 0})
-              </button>
-            ))}
+            {[...new Set(schoolData.map((item) => item.BOARD))].map((board, index) => {
+              const colors = [
+                'bg-red-500 text-white',
+                'bg-green-500 text-white',
+                'bg-blue-500 text-white',
+                'bg-yellow-500 text-black',
+                'bg-purple-500 text-white',
+                'bg-pink-500 text-white',
+                'bg-teal-500 text-white',
+              ];
+              const colorClass = colors[index % colors.length];
+              const selectedClass =
+                selectedBoard === board
+                  ? `border-b-4 border-black ${colorClass}`
+                  : colorClass;
+
+              return (
+                <button
+                  key={board}
+                  className={`px-4 py-2 text-lg font-semibold focus:outline-none rounded-lg ${selectedClass}`}
+                  onClick={() => setSelectedBoard(board)}
+                >
+                  {board} ({boardTotals[board] || 0})
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Filter Section */}
         <div className="mb-6">
           <div className="grid grid-cols-3 gap-4">
-            {/* Location Selector */}
             <select
               value={selectedLocation}
               onChange={handleLocationChange}
@@ -143,7 +179,6 @@ export default function SchoolData() {
               ))}
             </select>
 
-            {/* Sub-location Selector */}
             <select
               value={selectedSubLocation}
               onChange={handleSubLocationChange}
@@ -184,8 +219,8 @@ export default function SchoolData() {
               </tr>
             </thead>
             <tbody>
-              {filteredData.length > 0 ? (
-                filteredData.map((data, index) => (
+              {currentItems.length > 0 ? (
+                currentItems.map((data, index) => (
                   <tr key={index} className="text-center">
                     <td className="border border-gray-300 px-4 py-2">{data.SN}</td>
                     <td className="border border-gray-300 px-4 py-2">{data.BOARD}</td>
@@ -204,6 +239,24 @@ export default function SchoolData() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="mt-4 flex justify-between">
+          <button
+            onClick={handlePreviousPage}
+            className="px-4 py-2 bg-gray-500 text-white rounded-lg disabled:opacity-50"
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+          <button
+            onClick={handleNextPage}
+            className="px-4 py-2 bg-gray-500 text-white rounded-lg disabled:opacity-50"
+            disabled={currentPage === Math.ceil(filteredData.length / itemsPerPage)}
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

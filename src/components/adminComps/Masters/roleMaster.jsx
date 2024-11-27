@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getDocs, collection, doc, updateDoc } from 'firebase/firestore';
 import { CircularProgress } from '@mui/material';
 import { Search } from '@mui/icons-material';
-import Swal from 'sweetalert2';
+import Swal from 'sweetalert2';  // Import Swal2 (SweetAlert2)
 import { firestore } from '../../../utils/firebaseConfig';
 
 const RoleMaster = () => {
@@ -33,7 +33,7 @@ const RoleMaster = () => {
         setUserCount(totalUsers);
         setAdminCount(totalAdmins);
       } catch (error) {
-        Swal.fire('Error', 'Failed to load users', 'error');
+        showToast('error', 'Failed to load users');
       } finally {
         setLoading(false);
       }
@@ -76,10 +76,28 @@ const RoleMaster = () => {
       setUserCount(updatedUserCount);
       setAdminCount(updatedAdminCount);
 
-      Swal.fire('Success', `Role updated to ${newRole}`, 'success');
+      showToast('success', `Role updated to ${newRole}`);
     } catch (error) {
-      Swal.fire('Error', 'Failed to update role', 'error');
+      showToast('error', 'Failed to update role');
     }
+  };
+
+  // Helper function to show toast notifications
+  const showToast = (icon, message) => {
+    Swal.fire({
+      icon: icon,
+      title: message,
+      position: 'top-end',
+      toast: true,
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      position: 'top-end',
+      didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+      },
+    });
   };
 
   return (

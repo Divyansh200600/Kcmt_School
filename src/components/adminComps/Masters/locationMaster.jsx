@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Grid, Box, Card, CardContent, Typography, Divider, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Grid, Box, Card, CardContent, Typography, Divider, Select, MenuItem, FormControl, InputLabel, Checkbox, ListItemText } from '@mui/material';
 import { Edit, Delete, AddCircle } from '@mui/icons-material';
 import Swal from 'sweetalert2';
 import { firestore } from '../../../utils/firebaseConfig';
@@ -9,7 +9,7 @@ export default function LocationMaster() {
   const [locations, setLocations] = useState([]);
   const [institutions, setInstitutions] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState({ name: '', institutionId: '' });
+  const [currentLocation, setCurrentLocation] = useState({ name: '', institutionIds: [] });
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Fetch locations from Firestore
@@ -57,7 +57,7 @@ export default function LocationMaster() {
 
   const handleOpenDialog = (location = null) => {
     setIsEditMode(!!location);
-    setCurrentLocation(location || { name: '', institutionId: '' });
+    setCurrentLocation(location || { name: '', institutionIds: [] });
     setOpenDialog(true);
   };
 
@@ -65,7 +65,13 @@ export default function LocationMaster() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setCurrentLocation({ ...currentLocation, [name]: value });
+
+    // Handle multiple selections of institutions
+    if (name === 'institutionIds') {
+      setCurrentLocation({ ...currentLocation, institutionIds: value });
+    } else {
+      setCurrentLocation({ ...currentLocation, [name]: value });
+    }
   };
 
   const handleSave = async () => {
@@ -73,7 +79,7 @@ export default function LocationMaster() {
       if (isEditMode) {
         // Update existing location
         const locationRef = doc(firestore, 'locations', currentLocation.id);
-        await updateDoc(locationRef, { name: currentLocation.name, institutionId: currentLocation.institutionId });
+        await updateDoc(locationRef, { name: currentLocation.name, institutionIds: currentLocation.institutionIds });
         Swal.fire({
           title: 'Success',
           text: 'Location updated successfully',
@@ -85,7 +91,7 @@ export default function LocationMaster() {
         });
       } else {
         // Add new location
-        await addDoc(collection(firestore, 'locations'), { name: currentLocation.name, institutionId: currentLocation.institutionId });
+        await addDoc(collection(firestore, 'locations'), { name: currentLocation.name, institutionIds: currentLocation.institutionIds });
         Swal.fire({
           title: 'Success',
           text: 'Location added successfully',
@@ -119,13 +125,19 @@ export default function LocationMaster() {
       showCancelButton: true,
       confirmButtonText: 'Yes, delete it!',
       cancelButtonText: 'No, cancel!',
-      position: 'top-end',
-      toast: true,
-      timer: 3000
-    }).then(async (result) => {
+      position: 'center', // Set to center for delete confirmation dialog
+      showLoaderOnConfirm: true,
+      preConfirm: async () => {
+        try {
+          const locationRef = doc(firestore, 'locations', id);
+          await deleteDoc(locationRef);
+          return true;
+        } catch (error) {
+          return false;
+        }
+      },
+    }).then((result) => {
       if (result.isConfirmed) {
-        const locationRef = doc(firestore, 'locations', id);
-        await deleteDoc(locationRef);
         Swal.fire({
           title: 'Deleted!',
           text: 'The location has been deleted.',
@@ -136,6 +148,16 @@ export default function LocationMaster() {
           showConfirmButton: false
         });
         fetchLocations();
+      } else {
+        Swal.fire({
+          title: 'Cancelled',
+          text: 'The location was not deleted.',
+          icon: 'info',
+          position: 'top-end',
+          toast: true,
+          timer: 3000,
+          showConfirmButton: false
+        });
       }
     });
   };
@@ -145,13 +167,11 @@ export default function LocationMaster() {
       <Typography variant="h4" align="center" gutterBottom>Region Master</Typography>
 
       <Grid container spacing={4}>
-
         {/* Location Counter Display */}
         <Grid item xs={12}>
           <Typography variant="h6" color="textSecondary" style={{ fontWeight: 'bold' }}>
             Total Regions: {locations.length}
           </Typography>
-
         </Grid>
 
         <Grid item xs={12}>
@@ -189,15 +209,18 @@ export default function LocationMaster() {
             margin="dense"
           />
           <FormControl fullWidth margin="dense">
-            <InputLabel>Institution</InputLabel>
+            <InputLabel>Institutions</InputLabel>
             <Select
-              name="institutionId"
-              value={currentLocation.institutionId}
+              name="institutionIds"
+              multiple
+              value={currentLocation.institutionIds}
               onChange={handleChange}
+              renderValue={(selected) => selected.map(id => institutions.find(inst => inst.id === id)?.name).join(', ')}
             >
               {institutions.map((institution) => (
                 <MenuItem key={institution.id} value={institution.id}>
-                  {institution.name}
+                  <Checkbox checked={currentLocation.institutionIds.indexOf(institution.id) > -1} />
+                  <ListItemText primary={institution.name} />
                 </MenuItem>
               ))}
             </Select>

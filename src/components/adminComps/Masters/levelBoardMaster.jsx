@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Grid, Box, Card, CardContent, Typography, Divider, InputAdornment, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Grid, Box, Card, CardContent, Typography, Divider, InputAdornment, Select, MenuItem, FormControl, InputLabel, Checkbox, ListItemText, List, ListItem } from '@mui/material';
 import { Edit, Delete, AddCircle, Search } from '@mui/icons-material';
 import Swal from 'sweetalert2';
 import { firestore } from '../../../utils/firebaseConfig'; 
-import { collection, onSnapshot, addDoc,getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 export default function BoardMaster() {
   const [boards, setBoards] = useState([]);
   const [institutions, setInstitutions] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
-  const [currentItem, setCurrentItem] = useState({ name: '', institutionId: '' }); // Add institutionId
+  const [currentItem, setCurrentItem] = useState({ name: '', institutionIds: [] }); // Change to handle multiple institutionIds
   const [isEditMode, setIsEditMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -34,24 +34,20 @@ export default function BoardMaster() {
 
   // Use onSnapshot to listen to real-time updates for boards
   useEffect(() => {
-    // Fetch institutions first
     fetchInstitutions();
-
-    // Set up real-time listener for boards collection
     const boardsCollection = collection(firestore, 'levels_and_boards');
     const unsubscribe = onSnapshot(boardsCollection, (snapshot) => {
       const boardsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setBoards(boardsData.filter(board => board.type === 'board')); // Only get boards
     });
 
-    // Clean up listener on unmount
     return () => unsubscribe();
   }, []);
 
   // Open dialog for adding or editing a board
   const handleOpenDialog = (board = null) => {
     setIsEditMode(!!board);
-    setCurrentItem(board || { name: '', institutionId: '' });
+    setCurrentItem(board ? { ...board, institutionIds: board.institutionIds || [] } : { name: '', institutionIds: [] });
     setOpenDialog(true);
   };
 
@@ -64,12 +60,21 @@ export default function BoardMaster() {
     setCurrentItem({ ...currentItem, [name]: value });
   };
 
+  // Handle institution selection (checkboxes)
+  const handleInstitutionChange = (event) => {
+    const { value } = event.target;
+    setCurrentItem({
+      ...currentItem,
+      institutionIds: value,
+    });
+  };
+
   // Save or update board
   const handleSave = async () => {
-    if (!currentItem.name || !currentItem.institutionId) {
+    if (!currentItem.name || currentItem.institutionIds.length === 0) {
       Swal.fire({
         title: 'Error',
-        text: 'Name and Institution are required',
+        text: 'Name and at least one institution must be selected.',
         icon: 'error',
         position: 'top-end',
         toast: true,
@@ -120,7 +125,6 @@ export default function BoardMaster() {
     }
   };
 
-  // Delete board
   const handleDelete = async (id) => {
     Swal.fire({
       title: 'Are you sure?',
@@ -129,13 +133,19 @@ export default function BoardMaster() {
       showCancelButton: true,
       confirmButtonText: 'Yes, delete it!',
       cancelButtonText: 'No, cancel!',
-      position: 'top-end',
-      toast: true,
-      timer: 3000
-    }).then(async (result) => {
+      position: 'center',  
+      showLoaderOnConfirm: true,
+      preConfirm: async () => {
+        try {
+          const boardRef = doc(firestore, 'levels_and_boards', id);
+          await deleteDoc(boardRef);
+          return true;
+        } catch (error) {
+          return false;
+        }
+      },
+    }).then((result) => {
       if (result.isConfirmed) {
-        const boardRef = doc(firestore, 'levels_and_boards', id);
-        await deleteDoc(boardRef);
         Swal.fire({
           title: 'Deleted!',
           text: 'The board has been deleted.',
@@ -143,7 +153,17 @@ export default function BoardMaster() {
           position: 'top-end',
           toast: true,
           timer: 3000,
-          showConfirmButton: false
+          showConfirmButton: false,
+        });
+      } else if (result.isDismissed) {
+        Swal.fire({
+          title: 'Cancelled',
+          text: 'The board was not deleted.',
+          icon: 'info',
+          position: 'top-end',
+          toast: true,
+          timer: 3000,
+          showConfirmButton: false,
         });
       }
     });
@@ -212,15 +232,18 @@ export default function BoardMaster() {
             margin="dense"
           />
           <FormControl fullWidth margin="dense">
-            <InputLabel>Institution</InputLabel>
+            <InputLabel>Institutions</InputLabel>
             <Select
-              name="institutionId"
-              value={currentItem.institutionId}
-              onChange={handleChange}
+              multiple
+              name="institutionIds"
+              value={currentItem.institutionIds}
+              onChange={handleInstitutionChange}
+              renderValue={(selected) => selected.map(id => institutions.find(inst => inst.id === id)?.name).join(', ')}
             >
               {institutions.map((institution) => (
                 <MenuItem key={institution.id} value={institution.id}>
-                  {institution.name}
+                  <Checkbox checked={currentItem.institutionIds.indexOf(institution.id) > -1} />
+                  <ListItemText primary={institution.name} />
                 </MenuItem>
               ))}
             </Select>

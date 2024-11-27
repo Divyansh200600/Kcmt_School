@@ -40,7 +40,10 @@ export default function Reports() {
   // Fetch sub-locations based on selected location
   useEffect(() => {
     const fetchSubLocations = async () => {
-      if (!selectedLocation) return; // Don't fetch if no location selected
+      if (!selectedLocation) {
+        setSubLocations([]); // Clear sub-locations if no location is selected
+        return;
+      }
 
       setLoading(true);
       try {
@@ -101,7 +104,7 @@ export default function Reports() {
         const schoolDataRef = collection(firestore, "schoolData");
         let locationQuery;
 
-        // If sub-location is selected, filter by both location and sub-location
+        // If sub-location is selected and not empty, filter by both location and sub-location
         if (selectedSubLocation) {
           locationQuery = query(
             schoolDataRef,
@@ -196,9 +199,7 @@ export default function Reports() {
               value={selectedSubLocation}
               onChange={handleSubLocationChange}
             >
-              <option value="" disabled>
-                -- Select a Sub Location --
-              </option>
+              <option value="">-- All Sub Locations --</option>
               {subLocations.map((subLocation, index) => (
                 <option key={index} value={subLocation}>
                   {subLocation}

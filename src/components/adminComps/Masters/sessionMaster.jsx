@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Grid, Box, Card, CardContent, Typography, Divider, Select, MenuItem, FormControl, InputLabel, InputAdornment } from '@mui/material';
+import { Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle, IconButton,InputLabel,Select,MenuItem, Grid, Box, Card, CardContent, Typography, Divider, FormControl, FormGroup, FormControlLabel, Checkbox, InputAdornment } from '@mui/material';
 import { Edit, Delete, AddCircle, Search, CheckCircle, Cancel } from '@mui/icons-material';
 import Swal from 'sweetalert2';
 import { firestore } from '../../../utils/firebaseConfig'; 
@@ -9,7 +9,7 @@ export default function SessionMaster() {
   const [sessions, setSessions] = useState([]);
   const [institutions, setInstitutions] = useState([]); // Institutions state
   const [openDialog, setOpenDialog] = useState(false);
-  const [currentSession, setCurrentSession] = useState({ name: '', isActive: true, institutionId: '' });
+  const [currentSession, setCurrentSession] = useState({ name: '', isActive: true, institutionIds: [] }); // Updated to handle multiple institutions
   const [isEditMode, setIsEditMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -58,15 +58,27 @@ export default function SessionMaster() {
 
   const handleOpenDialog = (session = null) => {
     setIsEditMode(!!session);
-    setCurrentSession(session || { name: '', isActive: true, institutionId: '' });
+    setCurrentSession(session || { name: '', isActive: true, institutionIds: [] }); // Initialize with empty array for institutionIds
     setOpenDialog(true);
   };
 
   const handleCloseDialog = () => setOpenDialog(false);
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setCurrentSession({ ...currentSession, [name]: type === 'checkbox' ? checked : value });
+    const { name, value, checked } = e.target;
+
+    if (name === 'institutionIds') {
+      // Handle checkbox change for multiple institutions
+      let selectedInstitutions = [...currentSession.institutionIds];
+      if (checked) {
+        selectedInstitutions.push(value);
+      } else {
+        selectedInstitutions = selectedInstitutions.filter(institutionId => institutionId !== value);
+      }
+      setCurrentSession({ ...currentSession, institutionIds: selectedInstitutions });
+    } else {
+      setCurrentSession({ ...currentSession, [name]: value });
+    }
   };
 
   const handleSave = async () => {
@@ -74,7 +86,7 @@ export default function SessionMaster() {
       if (isEditMode) {
         // Update existing session
         const sessionRef = doc(firestore, 'sessions', currentSession.id);
-        await updateDoc(sessionRef, { name: currentSession.name, isActive: currentSession.isActive, institutionId: currentSession.institutionId });
+        await updateDoc(sessionRef, { name: currentSession.name, isActive: currentSession.isActive, institutionIds: currentSession.institutionIds });
         Swal.fire({
           title: 'Success',
           text: 'Session updated successfully',
@@ -86,7 +98,7 @@ export default function SessionMaster() {
         });
       } else {
         // Add new session
-        await addDoc(collection(firestore, 'sessions'), { name: currentSession.name, isActive: currentSession.isActive, institutionId: currentSession.institutionId });
+        await addDoc(collection(firestore, 'sessions'), { name: currentSession.name, isActive: currentSession.isActive, institutionIds: currentSession.institutionIds });
         Swal.fire({
           title: 'Success',
           text: 'Session added successfully',
@@ -120,24 +132,40 @@ export default function SessionMaster() {
       showCancelButton: true,
       confirmButtonText: 'Yes, delete it!',
       cancelButtonText: 'No, cancel!',
-      position: 'top-end',
-      toast: true,
-      timer: 3000
-    }).then(async (result) => {
+      position: 'center', // Confirmation dialog at the center
+      showLoaderOnConfirm: true,
+      preConfirm: async () => {
+        try {
+          const sessionRef = doc(firestore, 'sessions', id);
+          await deleteDoc(sessionRef);
+          return true;
+        } catch (error) {
+          return false;
+        }
+      },
+    }).then((result) => {
       if (result.isConfirmed) {
-        const sessionRef = doc(firestore, 'sessions', id);
-        await deleteDoc(sessionRef);
         Swal.fire({
           title: 'Deleted!',
           text: 'The session has been deleted.',
           icon: 'success',
-          position: 'top-end',
+          position: 'top-end', // Success notification at the top-right
           toast: true,
           timer: 3000,
           showConfirmButton: false
         });
 
         fetchData();
+      } else {
+        Swal.fire({
+          title: 'Cancelled',
+          text: 'The session was not deleted.',
+          icon: 'info',
+          position: 'top-end', // Information notification at the top-right
+          toast: true,
+          timer: 3000,
+          showConfirmButton: false
+        });
       }
     });
   };
@@ -232,18 +260,23 @@ export default function SessionMaster() {
             </Select>
           </FormControl>
           <FormControl fullWidth margin="dense">
-            <InputLabel>Institution</InputLabel>
-            <Select
-              name="institutionId"
-              value={currentSession.institutionId}
-              onChange={handleChange}
-            >
+            <Typography>Institutions</Typography>
+            <FormGroup>
               {institutions.map((institution) => (
-                <MenuItem key={institution.id} value={institution.id}>
-                  {institution.name}
-                </MenuItem>
+                <FormControlLabel
+                  key={institution.id}
+                  control={
+                    <Checkbox
+                      checked={currentSession.institutionIds.includes(institution.id)}
+                      onChange={handleChange}
+                      name="institutionIds"
+                      value={institution.id}
+                    />
+                  }
+                  label={institution.name}
+                />
               ))}
-            </Select>
+            </FormGroup>
           </FormControl>
         </DialogContent>
         <DialogActions>
